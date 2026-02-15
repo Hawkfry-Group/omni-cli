@@ -1,0 +1,1709 @@
+{
+  "generated_at": "2026-02-15T01:34:49Z",
+  "total_endpoints": 130,
+  "typed_covered_count": 130,
+  "typed_missing_count": 0,
+  "typed_coverage_percent": 100,
+  "typed_covered_endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/scim/v2/Groups",
+      "operation_id": "scimGroupsList",
+      "summary": "List SCIM groups",
+      "tags": [
+        "SCIM"
+      ],
+      "source_wrappers": [
+        "ListSCIMGroups"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/scim/v2/Groups",
+      "operation_id": "scimGroupsCreate",
+      "summary": "Create SCIM group",
+      "tags": [
+        "SCIM"
+      ],
+      "source_wrappers": [
+        "CreateSCIMGroup"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/scim/v2/Groups/{miniUuid}",
+      "operation_id": "scimGroupsDelete",
+      "summary": "Delete SCIM group",
+      "tags": [
+        "SCIM"
+      ],
+      "source_wrappers": [
+        "DeleteSCIMGroup"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/scim/v2/Groups/{miniUuid}",
+      "operation_id": "scimGroupsGet",
+      "summary": "Get SCIM group",
+      "tags": [
+        "SCIM"
+      ],
+      "source_wrappers": [
+        "GetSCIMGroup"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/scim/v2/Groups/{miniUuid}",
+      "operation_id": "scimGroupsUpdate",
+      "summary": "Update SCIM group",
+      "tags": [
+        "SCIM"
+      ],
+      "source_wrappers": [
+        "UpdateSCIMGroup"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/scim/v2/Groups/{miniUuid}",
+      "operation_id": "scimGroupsReplace",
+      "summary": "Replace SCIM group",
+      "tags": [
+        "SCIM"
+      ],
+      "source_wrappers": [
+        "ReplaceSCIMGroup"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/scim/v2/Users",
+      "operation_id": "scimUsersList",
+      "summary": "List SCIM users",
+      "tags": [
+        "SCIM"
+      ],
+      "source_wrappers": [
+        "AdminProbe",
+        "ListSCIMUsers"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/scim/v2/Users",
+      "operation_id": "scimUsersCreate",
+      "summary": "Create SCIM user",
+      "tags": [
+        "SCIM"
+      ],
+      "source_wrappers": [
+        "CreateSCIMUser"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/scim/v2/Users/{id}",
+      "operation_id": "scimUsersDelete",
+      "summary": "Delete SCIM user",
+      "tags": [
+        "SCIM"
+      ],
+      "source_wrappers": [
+        "DeleteSCIMUser"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/scim/v2/Users/{id}",
+      "operation_id": "scimUsersGet",
+      "summary": "Get SCIM user",
+      "tags": [
+        "SCIM"
+      ],
+      "source_wrappers": [
+        "GetSCIMUser"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/scim/v2/Users/{id}",
+      "operation_id": "scimUsersUpdate",
+      "summary": "Update SCIM user",
+      "tags": [
+        "SCIM"
+      ],
+      "source_wrappers": [
+        "UpdateSCIMUser"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/scim/v2/Users/{id}",
+      "operation_id": "scimUsersReplace",
+      "summary": "Replace SCIM user",
+      "tags": [
+        "SCIM"
+      ],
+      "source_wrappers": [
+        "ReplaceSCIMUser"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/scim/v2/embed/Users",
+      "operation_id": "scimEmbedUsersList",
+      "summary": "List embed users",
+      "tags": [
+        "SCIM"
+      ],
+      "source_wrappers": [
+        "ListSCIMEmbedUsers"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/scim/v2/embed/Users/{id}",
+      "operation_id": "scimEmbedUsersDelete",
+      "summary": "Delete embed user",
+      "tags": [
+        "SCIM"
+      ],
+      "source_wrappers": [
+        "DeleteSCIMEmbedUser"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/scim/v2/embed/Users/{id}",
+      "operation_id": "scimEmbedUsersGet",
+      "summary": "Get embed user",
+      "tags": [
+        "SCIM"
+      ],
+      "source_wrappers": [
+        "GetSCIMEmbedUser"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/unstable/documents/import",
+      "operation_id": "unstableDocumentsImport",
+      "summary": "Import document (unstable)",
+      "tags": [
+        "Unstable"
+      ],
+      "source_wrappers": [
+        "ImportUnstableDocument"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/unstable/documents/{identifier}/export",
+      "operation_id": "unstableDocumentsExport",
+      "summary": "Export document (unstable)",
+      "tags": [
+        "Unstable"
+      ],
+      "source_wrappers": [
+        "ExportUnstableDocument"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/agentic/jobs",
+      "operation_id": "agenticJobSubmit",
+      "summary": "Submit an agentic job",
+      "tags": [
+        "Agentic"
+      ],
+      "source_wrappers": [
+        "SubmitAgenticJob"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/agentic/jobs/{jobId}",
+      "operation_id": "agenticJobStatus",
+      "summary": "Get agentic job status",
+      "tags": [
+        "Agentic"
+      ],
+      "source_wrappers": [
+        "GetAgenticJobStatus"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/agentic/jobs/{jobId}/cancel",
+      "operation_id": "agenticJobCancel",
+      "summary": "Cancel an agentic job",
+      "tags": [
+        "Agentic"
+      ],
+      "source_wrappers": [
+        "CancelAgenticJob"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/agentic/jobs/{jobId}/result",
+      "operation_id": "agenticJobResult",
+      "summary": "Get agentic job result",
+      "tags": [
+        "Agentic"
+      ],
+      "source_wrappers": [
+        "GetAgenticJobResult"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/ai/generate-query",
+      "operation_id": "aiGenerateQuery",
+      "summary": "Generate query from natural language",
+      "tags": [
+        "AI"
+      ],
+      "source_wrappers": [
+        "AIGenerateQuery"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/ai/pick-topic",
+      "operation_id": "aiPickTopic",
+      "summary": "Pick topic for natural language prompt",
+      "tags": [
+        "AI"
+      ],
+      "source_wrappers": [
+        "AIPickTopic"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/connection-environments",
+      "operation_id": "connectionEnvironmentsList",
+      "summary": "List connection environments",
+      "tags": [
+        "Connections"
+      ],
+      "source_wrappers": [
+        "ListConnectionEnvironments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/connection-environments",
+      "operation_id": "connectionEnvironmentsCreate",
+      "summary": "Create connection environments",
+      "tags": [
+        "Connections"
+      ],
+      "source_wrappers": [
+        "CreateConnectionEnvironment"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/connection-environments/{id}",
+      "operation_id": "connectionEnvironmentsDelete",
+      "summary": "Delete connection environment",
+      "tags": [
+        "Connections"
+      ],
+      "source_wrappers": [
+        "DeleteConnectionEnvironment"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/connection-environments/{id}",
+      "operation_id": "connectionEnvironmentsUpdate",
+      "summary": "Update connection environment",
+      "tags": [
+        "Connections"
+      ],
+      "source_wrappers": [
+        "UpdateConnectionEnvironment"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/connections",
+      "operation_id": "connectionsList",
+      "summary": "List connections",
+      "tags": [
+        "Connections"
+      ],
+      "source_wrappers": [
+        "ListConnections"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/connections",
+      "operation_id": "connectionsCreate",
+      "summary": "Create connection",
+      "tags": [
+        "Connections"
+      ],
+      "source_wrappers": [
+        "CreateConnection"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/connections/{connectionId}/dbt",
+      "operation_id": "connectionsDbtDelete",
+      "summary": "Delete dbt configuration",
+      "tags": [
+        "Connections"
+      ],
+      "source_wrappers": [
+        "DeleteConnectionDBT"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/connections/{connectionId}/dbt",
+      "operation_id": "connectionsDbtGet",
+      "summary": "Get dbt configuration",
+      "tags": [
+        "Connections"
+      ],
+      "source_wrappers": [
+        "GetConnectionDBT"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/connections/{connectionId}/dbt",
+      "operation_id": "connectionsDbtUpdate",
+      "summary": "Update dbt configuration",
+      "tags": [
+        "Connections"
+      ],
+      "source_wrappers": [
+        "UpdateConnectionDBT"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/connections/{connectionId}/schedules",
+      "operation_id": "connectionsSchedulesList",
+      "summary": "List schema refresh schedules",
+      "tags": [
+        "Connections"
+      ],
+      "source_wrappers": [
+        "ListConnectionSchedules"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/connections/{connectionId}/schedules",
+      "operation_id": "connectionsSchedulesCreate",
+      "summary": "Create schema refresh schedule",
+      "tags": [
+        "Connections"
+      ],
+      "source_wrappers": [
+        "CreateConnectionSchedule"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/connections/{connectionId}/schedules/{scheduleId}",
+      "operation_id": "connectionsSchedulesDelete",
+      "summary": "Delete schema refresh schedule",
+      "tags": [
+        "Connections"
+      ],
+      "source_wrappers": [
+        "DeleteConnectionSchedule"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/connections/{connectionId}/schedules/{scheduleId}",
+      "operation_id": "connectionsSchedulesGet",
+      "summary": "Get schema refresh schedule",
+      "tags": [
+        "Connections"
+      ],
+      "source_wrappers": [
+        "GetConnectionSchedule"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/connections/{connectionId}/schedules/{scheduleId}",
+      "operation_id": "connectionsSchedulesUpdate",
+      "summary": "Update schema refresh schedule",
+      "tags": [
+        "Connections"
+      ],
+      "source_wrappers": [
+        "UpdateConnectionSchedule"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/connections/{id}",
+      "operation_id": "connectionsUpdate",
+      "summary": "Update connection",
+      "tags": [
+        "Connections"
+      ],
+      "source_wrappers": [
+        "UpdateConnection"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/content",
+      "operation_id": "contentList",
+      "summary": "List content",
+      "tags": [
+        "Content"
+      ],
+      "source_wrappers": [
+        "BaseProbe"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/dashboards/{identifier}/download",
+      "operation_id": "dashboardsDownload",
+      "summary": "Initiate dashboard download",
+      "tags": [
+        "Dashboards"
+      ],
+      "source_wrappers": [
+        "DashboardDownload"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/dashboards/{identifier}/download/{jobId}",
+      "operation_id": "dashboardsDownloadFile",
+      "summary": "Get download file",
+      "tags": [
+        "Dashboards"
+      ],
+      "source_wrappers": [
+        "DashboardDownloadFile"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/dashboards/{identifier}/download/{jobId}/status",
+      "operation_id": "dashboardsDownloadStatus",
+      "summary": "Get download job status",
+      "tags": [
+        "Dashboards"
+      ],
+      "source_wrappers": [
+        "DashboardDownloadStatus"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/dashboards/{identifier}/filters",
+      "operation_id": "dashboardsGetFilters",
+      "summary": "Get dashboard filters",
+      "tags": [
+        "Dashboards"
+      ],
+      "source_wrappers": [
+        "GetDashboardFilters"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/dashboards/{identifier}/filters",
+      "operation_id": "dashboardsUpdateFilters",
+      "summary": "Update dashboard filters",
+      "tags": [
+        "Dashboards"
+      ],
+      "source_wrappers": [
+        "UpdateDashboardFilters"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/documents",
+      "operation_id": "documentsList",
+      "summary": "List documents",
+      "tags": [
+        "Documents"
+      ],
+      "source_wrappers": [
+        "ListDocuments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/documents",
+      "operation_id": "documentsCreate",
+      "summary": "Create document",
+      "tags": [
+        "Documents"
+      ],
+      "source_wrappers": [
+        "CreateDocument"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/documents/{identifier}",
+      "operation_id": "documentsDelete",
+      "summary": "Delete document",
+      "tags": [
+        "Documents"
+      ],
+      "source_wrappers": [
+        "DeleteDocument"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/documents/{identifier}",
+      "operation_id": "documentsGet",
+      "summary": "Get document",
+      "tags": [
+        "Documents"
+      ],
+      "source_wrappers": [
+        "GetDocument"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/documents/{identifier}",
+      "operation_id": "documentsRename",
+      "summary": "Rename document",
+      "tags": [
+        "Documents"
+      ],
+      "source_wrappers": [
+        "RenameDocument"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/documents/{identifier}/access-list",
+      "operation_id": "documentsAccessList",
+      "summary": "List document access principals",
+      "tags": [
+        "Documents"
+      ],
+      "source_wrappers": [
+        "ListDocumentAccess"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/documents/{identifier}/draft",
+      "operation_id": "documentsDiscardDraft",
+      "summary": "Discard document draft",
+      "tags": [
+        "Documents"
+      ],
+      "source_wrappers": [
+        "DiscardDocumentDraft"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/documents/{identifier}/draft",
+      "operation_id": "documentsCreateDraft",
+      "summary": "Create document draft",
+      "tags": [
+        "Documents"
+      ],
+      "source_wrappers": [
+        "CreateDocumentDraft"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/documents/{identifier}/duplicate",
+      "operation_id": "documentsDuplicate",
+      "summary": "Duplicate document",
+      "tags": [
+        "Documents"
+      ],
+      "source_wrappers": [
+        "DuplicateDocument"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/documents/{identifier}/favorite",
+      "operation_id": "documentsRemoveFavorite",
+      "summary": "Remove document from favorites",
+      "tags": [
+        "Documents"
+      ],
+      "source_wrappers": [
+        "RemoveDocumentFavorite"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/documents/{identifier}/favorite",
+      "operation_id": "documentsAddFavorite",
+      "summary": "Add document to favorites",
+      "tags": [
+        "Documents"
+      ],
+      "source_wrappers": [
+        "AddDocumentFavorite"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/documents/{identifier}/labels",
+      "operation_id": "documentsBulkUpdateLabels",
+      "summary": "Bulk update document labels",
+      "tags": [
+        "Documents"
+      ],
+      "source_wrappers": [
+        "BulkUpdateDocumentLabels"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/documents/{identifier}/labels/{labelName}",
+      "operation_id": "documentsRemoveLabel",
+      "summary": "Remove label from document",
+      "tags": [
+        "Documents"
+      ],
+      "source_wrappers": [
+        "RemoveDocumentLabel"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/documents/{identifier}/labels/{labelName}",
+      "operation_id": "documentsAddLabel",
+      "summary": "Add label to document",
+      "tags": [
+        "Documents"
+      ],
+      "source_wrappers": [
+        "AddDocumentLabel"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/documents/{identifier}/move",
+      "operation_id": "documentsMove",
+      "summary": "Move document",
+      "tags": [
+        "Documents"
+      ],
+      "source_wrappers": [
+        "MoveDocument"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/documents/{identifier}/permissions",
+      "operation_id": "documentsRevokePermits",
+      "summary": "Revoke document permits",
+      "tags": [
+        "Documents"
+      ],
+      "source_wrappers": [
+        "RevokeDocumentPermits"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/documents/{identifier}/permissions",
+      "operation_id": "documentsGetPermissions",
+      "summary": "Get document permissions",
+      "tags": [
+        "Documents"
+      ],
+      "source_wrappers": [
+        "GetDocumentPermissions"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/documents/{identifier}/permissions",
+      "operation_id": "documentsUpdatePermits",
+      "summary": "Update document permits",
+      "tags": [
+        "Documents"
+      ],
+      "source_wrappers": [
+        "UpdateDocumentPermits"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/documents/{identifier}/permissions",
+      "operation_id": "documentsAddPermits",
+      "summary": "Add document permits",
+      "tags": [
+        "Documents"
+      ],
+      "source_wrappers": [
+        "AddDocumentPermits"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/documents/{identifier}/permissions",
+      "operation_id": "documentsUpdatePermissionSettings",
+      "summary": "Update document permission settings",
+      "tags": [
+        "Documents"
+      ],
+      "source_wrappers": [
+        "UpdateDocumentPermissionSettings"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/documents/{identifier}/queries",
+      "operation_id": "documentsGetQueries",
+      "summary": "List document queries",
+      "tags": [
+        "Documents"
+      ],
+      "source_wrappers": [
+        "ListDocumentQueries"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/documents/{identifier}/transfer-ownership",
+      "operation_id": "documentsTransferOwnership",
+      "summary": "Transfer document ownership",
+      "tags": [
+        "Documents"
+      ],
+      "source_wrappers": [
+        "TransferDocumentOwnership"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/embed/sso/generate-session",
+      "operation_id": "embedSsoGenerateSession",
+      "summary": "Generate embedded SSO session",
+      "tags": [
+        "Embed"
+      ],
+      "source_wrappers": [
+        "GenerateEmbedSSOSession"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/folders",
+      "operation_id": "foldersList",
+      "summary": "List folders",
+      "tags": [
+        "Folders"
+      ],
+      "source_wrappers": [
+        "ListFolders"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/folders",
+      "operation_id": "foldersCreate",
+      "summary": "Create a folder",
+      "tags": [
+        "Folders"
+      ],
+      "source_wrappers": [
+        "CreateFolder"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/folders/{folderId}",
+      "operation_id": "foldersDelete",
+      "summary": "Delete a folder",
+      "tags": [
+        "Folders"
+      ],
+      "source_wrappers": [
+        "DeleteFolder"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/folders/{folderId}/permissions",
+      "operation_id": "foldersRevokePermissions",
+      "summary": "Revoke folder permissions",
+      "tags": [
+        "Folders"
+      ],
+      "source_wrappers": [
+        "RevokeFolderPermissions"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/folders/{folderId}/permissions",
+      "operation_id": "foldersGetPermissions",
+      "summary": "Get folder permissions",
+      "tags": [
+        "Folders"
+      ],
+      "source_wrappers": [
+        "GetFolderPermissions"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/folders/{folderId}/permissions",
+      "operation_id": "foldersUpdatePermissions",
+      "summary": "Update folder permissions",
+      "tags": [
+        "Folders"
+      ],
+      "source_wrappers": [
+        "UpdateFolderPermissions"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/folders/{folderId}/permissions",
+      "operation_id": "foldersAddPermissions",
+      "summary": "Add folder permissions",
+      "tags": [
+        "Folders"
+      ],
+      "source_wrappers": [
+        "AddFolderPermissions"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/jobs/{jobId}/status",
+      "operation_id": "jobsGetStatus",
+      "summary": "Get schema refresh job status",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "GetJobStatus"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/labels",
+      "operation_id": "labelsList",
+      "summary": "List all labels",
+      "tags": [
+        "Labels"
+      ],
+      "source_wrappers": [
+        "ListLabels"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/labels",
+      "operation_id": "labelsCreate",
+      "summary": "Create a label",
+      "tags": [
+        "Labels"
+      ],
+      "source_wrappers": [
+        "CreateLabel"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/labels/{name}",
+      "operation_id": "labelsDelete",
+      "summary": "Delete a label",
+      "tags": [
+        "Labels"
+      ],
+      "source_wrappers": [
+        "DeleteLabel"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/labels/{name}",
+      "operation_id": "labelsGet",
+      "summary": "Get a label by name",
+      "tags": [
+        "Labels"
+      ],
+      "source_wrappers": [
+        "GetLabel"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/labels/{name}",
+      "operation_id": "labelsUpdate",
+      "summary": "Update a label",
+      "tags": [
+        "Labels"
+      ],
+      "source_wrappers": [
+        "UpdateLabel"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/models",
+      "operation_id": "modelsList",
+      "summary": "List models",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "GetModelByID",
+        "ListModels"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/models",
+      "operation_id": "modelsCreate",
+      "summary": "Create model",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "CreateModel"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/models/{modelId}/branch/{branchName}",
+      "operation_id": "modelsDeleteBranch",
+      "summary": "Delete branch",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "DeleteModelBranch"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/models/{modelId}/branch/{branchName}/merge",
+      "operation_id": "modelsMergeBranch",
+      "summary": "Merge branch",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "MergeModelBranch"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/models/{modelId}/cache_reset/{policyName}",
+      "operation_id": "modelsCacheReset",
+      "summary": "Reset cache for policy",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "ResetModelCache"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/models/{modelId}/content-validator",
+      "operation_id": "modelsContentValidatorGet",
+      "summary": "Validate content references",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "GetModelContentValidator"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/models/{modelId}/content-validator",
+      "operation_id": "modelsContentValidatorReplace",
+      "summary": "Replace content references",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "ReplaceModelContentValidator"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/models/{modelId}/field",
+      "operation_id": "modelsCreateField",
+      "summary": "Create field",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "CreateModelField"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/models/{modelId}/git",
+      "operation_id": "modelsGitDelete",
+      "summary": "Delete git configuration",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "DeleteModelGit"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/models/{modelId}/git",
+      "operation_id": "modelsGitGet",
+      "summary": "Get git configuration",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "GetModelGit"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/models/{modelId}/git",
+      "operation_id": "modelsGitUpdate",
+      "summary": "Update git configuration",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "UpdateModelGit"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/models/{modelId}/git",
+      "operation_id": "modelsGitCreate",
+      "summary": "Create git configuration",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "CreateModelGit"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/models/{modelId}/git/sync",
+      "operation_id": "modelsGitSync",
+      "summary": "Sync model with git",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "SyncModelGit"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/models/{modelId}/migrate",
+      "operation_id": "modelsMigrate",
+      "summary": "Migrate model",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "MigrateModel"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/models/{modelId}/refresh",
+      "operation_id": "modelsRefresh",
+      "summary": "Refresh model schema",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "RefreshModel"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/models/{modelId}/topic",
+      "operation_id": "modelsListTopics",
+      "summary": "List topics",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "ListModelTopics"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/models/{modelId}/topic/{topicName}",
+      "operation_id": "modelsDeleteTopic",
+      "summary": "Delete topic",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "DeleteModelTopic"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/models/{modelId}/topic/{topicName}",
+      "operation_id": "modelsGetTopic",
+      "summary": "Get topic",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "GetModelTopic"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/models/{modelId}/topic/{topicName}",
+      "operation_id": "modelsUpdateTopic",
+      "summary": "Update topic",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "UpdateModelTopic"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/models/{modelId}/validate",
+      "operation_id": "modelsValidate",
+      "summary": "Validate model",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "ValidateModel"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/models/{modelId}/view",
+      "operation_id": "modelsGetViews",
+      "summary": "Get model views",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "ListModelViews"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/models/{modelId}/view/{viewName}",
+      "operation_id": "modelsDeleteView",
+      "summary": "Delete view",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "DeleteModelView"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/models/{modelId}/view/{viewName}",
+      "operation_id": "modelsUpdateView",
+      "summary": "Update view",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "UpdateModelView"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/models/{modelId}/view/{viewName}/field/{fieldName}",
+      "operation_id": "modelsDeleteField",
+      "summary": "Delete field",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "DeleteModelField"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/models/{modelId}/view/{viewName}/field/{fieldName}",
+      "operation_id": "modelsUpdateField",
+      "summary": "Update field",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "UpdateModelField"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/models/{modelId}/yaml",
+      "operation_id": "modelsYamlDelete",
+      "summary": "Delete model YAML file",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "DeleteModelYAML"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/models/{modelId}/yaml",
+      "operation_id": "modelsYamlGet",
+      "summary": "Get model YAML",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "GetModelYAML"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/models/{modelId}/yaml",
+      "operation_id": "modelsYamlCreate",
+      "summary": "Update model YAML",
+      "tags": [
+        "Models"
+      ],
+      "source_wrappers": [
+        "CreateModelYAML"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/query/run",
+      "operation_id": "queryRun",
+      "summary": "Execute a semantic query",
+      "tags": [
+        "Query"
+      ],
+      "source_wrappers": [
+        "QueryProbe",
+        "RunQuery"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/query/wait",
+      "operation_id": "queryWait",
+      "summary": "Wait for query jobs to complete",
+      "tags": [
+        "Query"
+      ],
+      "source_wrappers": [
+        "WaitForQueryResults"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/schedules",
+      "operation_id": "schedulesList",
+      "summary": "List schedules",
+      "tags": [
+        "Schedules"
+      ],
+      "source_wrappers": [
+        "ListSchedules"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/schedules",
+      "operation_id": "schedulesCreate",
+      "summary": "Create schedule",
+      "tags": [
+        "Schedules"
+      ],
+      "source_wrappers": [
+        "CreateSchedule"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/schedules/{scheduleId}",
+      "operation_id": "schedulesDelete",
+      "summary": "Delete schedule",
+      "tags": [
+        "Schedules"
+      ],
+      "source_wrappers": [
+        "DeleteSchedule"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/schedules/{scheduleId}",
+      "operation_id": "schedulesGet",
+      "summary": "Get schedule",
+      "tags": [
+        "Schedules"
+      ],
+      "source_wrappers": [
+        "GetSchedule"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/schedules/{scheduleId}",
+      "operation_id": "schedulesUpdate",
+      "summary": "Update schedule",
+      "tags": [
+        "Schedules"
+      ],
+      "source_wrappers": [
+        "UpdateSchedule"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/schedules/{scheduleId}/add-recipients",
+      "operation_id": "schedulesAddRecipients",
+      "summary": "Add schedule recipients",
+      "tags": [
+        "Schedules"
+      ],
+      "source_wrappers": [
+        "AddScheduleRecipients"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/schedules/{scheduleId}/pause",
+      "operation_id": "schedulesPause",
+      "summary": "Pause schedule",
+      "tags": [
+        "Schedules"
+      ],
+      "source_wrappers": [
+        "PauseSchedule"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/schedules/{scheduleId}/recipients",
+      "operation_id": "schedulesRecipientsGet",
+      "summary": "Get schedule recipients",
+      "tags": [
+        "Schedules"
+      ],
+      "source_wrappers": [
+        "GetScheduleRecipients"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/schedules/{scheduleId}/remove-recipients",
+      "operation_id": "schedulesRemoveRecipients",
+      "summary": "Remove schedule recipients",
+      "tags": [
+        "Schedules"
+      ],
+      "source_wrappers": [
+        "RemoveScheduleRecipients"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/schedules/{scheduleId}/resume",
+      "operation_id": "schedulesResume",
+      "summary": "Resume schedule",
+      "tags": [
+        "Schedules"
+      ],
+      "source_wrappers": [
+        "ResumeSchedule"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/schedules/{scheduleId}/transfer-ownership",
+      "operation_id": "schedulesTransferOwnership",
+      "summary": "Transfer schedule ownership",
+      "tags": [
+        "Schedules"
+      ],
+      "source_wrappers": [
+        "TransferScheduleOwnership"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/schedules/{scheduleId}/trigger",
+      "operation_id": "schedulesTrigger",
+      "summary": "Trigger schedule",
+      "tags": [
+        "Schedules"
+      ],
+      "source_wrappers": [
+        "TriggerSchedule"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/user-attributes",
+      "operation_id": "userAttributesList",
+      "summary": "List all user attribute definitions",
+      "tags": [
+        "User Attributes"
+      ],
+      "source_wrappers": [
+        "ListUserAttributes"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/user-groups/{id}/model-roles",
+      "operation_id": "userGroupsGetModelRoles",
+      "summary": "Get user group model roles",
+      "tags": [
+        "Users"
+      ],
+      "source_wrappers": [
+        "GetUserGroupModelRoles"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/user-groups/{id}/model-roles",
+      "operation_id": "userGroupsAssignModelRole",
+      "summary": "Assign model role to user group",
+      "tags": [
+        "Users"
+      ],
+      "source_wrappers": [
+        "AssignUserGroupModelRole"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/users/email-only",
+      "operation_id": "usersListEmailOnly",
+      "summary": "List email-only users",
+      "tags": [
+        "Users"
+      ],
+      "source_wrappers": [
+        "ListEmailOnlyUsers"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/users/email-only",
+      "operation_id": "usersCreateEmailOnly",
+      "summary": "Create or update email-only user",
+      "tags": [
+        "Users"
+      ],
+      "source_wrappers": [
+        "CreateEmailOnlyUser"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/users/email-only/bulk",
+      "operation_id": "usersCreateEmailOnlyBulk",
+      "summary": "Create email-only users in bulk",
+      "tags": [
+        "Users"
+      ],
+      "source_wrappers": [
+        "CreateEmailOnlyUsersBulk"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/users/{id}/model-roles",
+      "operation_id": "usersGetModelRoles",
+      "summary": "Get user model roles",
+      "tags": [
+        "Users"
+      ],
+      "source_wrappers": [
+        "GetUserModelRoles"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/users/{id}/model-roles",
+      "operation_id": "usersAssignModelRole",
+      "summary": "Assign model role to user",
+      "tags": [
+        "Users"
+      ],
+      "source_wrappers": [
+        "AssignUserModelRole"
+      ]
+    }
+  ],
+  "typed_missing_endpoints": [],
+  "cli_wrappers_used": [
+    "AIGenerateQuery",
+    "AIPickTopic",
+    "AddDocumentFavorite",
+    "AddDocumentLabel",
+    "AddDocumentPermits",
+    "AddFolderPermissions",
+    "AddScheduleRecipients",
+    "AdminProbe",
+    "AssignUserGroupModelRole",
+    "AssignUserModelRole",
+    "BaseProbe",
+    "BulkUpdateDocumentLabels",
+    "CancelAgenticJob",
+    "CreateConnection",
+    "CreateConnectionEnvironment",
+    "CreateConnectionSchedule",
+    "CreateDocument",
+    "CreateDocumentDraft",
+    "CreateEmailOnlyUser",
+    "CreateEmailOnlyUsersBulk",
+    "CreateFolder",
+    "CreateLabel",
+    "CreateModel",
+    "CreateModelField",
+    "CreateModelGit",
+    "CreateModelYAML",
+    "CreateSCIMGroup",
+    "CreateSCIMUser",
+    "CreateSchedule",
+    "DashboardDownload",
+    "DashboardDownloadFile",
+    "DashboardDownloadStatus",
+    "DeleteConnectionDBT",
+    "DeleteConnectionEnvironment",
+    "DeleteConnectionSchedule",
+    "DeleteDocument",
+    "DeleteFolder",
+    "DeleteLabel",
+    "DeleteModelBranch",
+    "DeleteModelField",
+    "DeleteModelGit",
+    "DeleteModelTopic",
+    "DeleteModelView",
+    "DeleteModelYAML",
+    "DeleteSCIMEmbedUser",
+    "DeleteSCIMGroup",
+    "DeleteSCIMUser",
+    "DeleteSchedule",
+    "DiscardDocumentDraft",
+    "DuplicateDocument",
+    "ExportUnstableDocument",
+    "GenerateEmbedSSOSession",
+    "GetAgenticJobResult",
+    "GetAgenticJobStatus",
+    "GetConnectionDBT",
+    "GetConnectionSchedule",
+    "GetDashboardFilters",
+    "GetDocument",
+    "GetDocumentPermissions",
+    "GetFolderPermissions",
+    "GetJobStatus",
+    "GetLabel",
+    "GetModelByID",
+    "GetModelContentValidator",
+    "GetModelGit",
+    "GetModelTopic",
+    "GetModelYAML",
+    "GetSCIMEmbedUser",
+    "GetSCIMGroup",
+    "GetSCIMUser",
+    "GetSchedule",
+    "GetScheduleRecipients",
+    "GetUserGroupModelRoles",
+    "GetUserModelRoles",
+    "ImportUnstableDocument",
+    "ListConnectionEnvironments",
+    "ListConnectionSchedules",
+    "ListConnections",
+    "ListDocumentAccess",
+    "ListDocumentQueries",
+    "ListDocuments",
+    "ListEmailOnlyUsers",
+    "ListFolders",
+    "ListLabels",
+    "ListModelTopics",
+    "ListModelViews",
+    "ListModels",
+    "ListSCIMEmbedUsers",
+    "ListSCIMGroups",
+    "ListSCIMUsers",
+    "ListSchedules",
+    "ListUserAttributes",
+    "MergeModelBranch",
+    "MigrateModel",
+    "MoveDocument",
+    "PauseSchedule",
+    "QueryProbe",
+    "RefreshModel",
+    "RemoveDocumentFavorite",
+    "RemoveDocumentLabel",
+    "RemoveScheduleRecipients",
+    "RenameDocument",
+    "ReplaceModelContentValidator",
+    "ReplaceSCIMGroup",
+    "ReplaceSCIMUser",
+    "ResetModelCache",
+    "ResumeSchedule",
+    "RevokeDocumentPermits",
+    "RevokeFolderPermissions",
+    "RunQuery",
+    "SubmitAgenticJob",
+    "SyncModelGit",
+    "TransferDocumentOwnership",
+    "TransferScheduleOwnership",
+    "TriggerSchedule",
+    "UpdateConnection",
+    "UpdateConnectionDBT",
+    "UpdateConnectionEnvironment",
+    "UpdateConnectionSchedule",
+    "UpdateDashboardFilters",
+    "UpdateDocumentPermissionSettings",
+    "UpdateDocumentPermits",
+    "UpdateFolderPermissions",
+    "UpdateLabel",
+    "UpdateModelField",
+    "UpdateModelGit",
+    "UpdateModelTopic",
+    "UpdateModelView",
+    "UpdateSCIMGroup",
+    "UpdateSCIMUser",
+    "UpdateSchedule",
+    "ValidateModel",
+    "WaitForQueryResults"
+  ],
+  "wrappers_without_mapping": []
+}
