@@ -32,7 +32,7 @@ _omni_completions() {
   _init_completion || return
 
   if [[ $cword -eq 1 ]]; then
-    COMPREPLY=( $( compgen -W "setup doctor auth documents models connections folders labels schedules dashboards agentic embed unstable user-attributes admin users scim ai api query jobs completion version help" -- "$cur" ) )
+    COMPREPLY=( $( compgen -W "schema exit-codes setup doctor auth documents models connections folders labels schedules dashboards agentic embed unstable user-attributes admin users scim ai api query jobs completion version help" -- "$cur" ) )
     return
   fi
 
@@ -42,6 +42,9 @@ _omni_completions() {
       ;;
     query)
       COMPREPLY=( $( compgen -W "run" -- "$cur" ) )
+      ;;
+    schema)
+      COMPREPLY=( $( compgen -W "omni setup doctor auth documents models connections folders labels schedules dashboards agentic embed unstable user-attributes admin users scim ai api query jobs completion version help exit-codes schema" -- "$cur" ) )
       ;;
     documents)
       COMPREPLY=( $( compgen -W "list get create delete rm rename move draft duplicate favorite access permissions perm label labels queries transfer-ownership" -- "$cur" ) )
@@ -110,6 +113,8 @@ _omni() {
   local -a commands
   commands=(
     'setup:Configure Omni URL + token profile'
+    'schema:Print machine-readable command schema'
+    'exit-codes:Print stable automation exit codes'
     'doctor:Run connectivity and capability checks'
     'auth:Manage profiles and tokens'
     'documents:List and inspect documents'
@@ -146,6 +151,9 @@ _omni() {
       ;;
     query)
       _describe 'query command' 'run'
+      ;;
+    schema)
+      _describe 'schema path' 'omni setup doctor auth documents models connections folders labels schedules dashboards agentic embed unstable user-attributes admin users scim ai api query jobs completion version help exit-codes schema'
       ;;
     documents)
       _describe 'documents command' 'list get create delete rm rename move draft duplicate favorite access permissions perm label labels queries transfer-ownership'
@@ -210,7 +218,7 @@ _omni "$@"
 
 func fishCompletion() string {
 	return `# fish completion for omni
-complete -c omni -f -n "__fish_use_subcommand" -a "setup doctor auth documents models connections folders labels schedules dashboards agentic embed unstable user-attributes admin users scim ai api query jobs completion version help"
+complete -c omni -f -n "__fish_use_subcommand" -a "schema exit-codes setup doctor auth documents models connections folders labels schedules dashboards agentic embed unstable user-attributes admin users scim ai api query jobs completion version help"
 complete -c omni -f -n "__fish_seen_subcommand_from auth" -a "add list remove rm use show whoami"
 complete -c omni -f -n "__fish_seen_subcommand_from documents" -a "list get create delete rm rename move draft duplicate favorite access permissions perm label labels queries transfer-ownership"
 complete -c omni -f -n "__fish_seen_subcommand_from models" -a "list get create refresh validate branch cache-reset topics views fields git migrate content-validator yaml"
@@ -229,6 +237,7 @@ complete -c omni -f -n "__fish_seen_subcommand_from scim" -a "users groups embed
 complete -c omni -f -n "__fish_seen_subcommand_from ai" -a "generate-query workbook pick-topic"
 complete -c omni -f -n "__fish_seen_subcommand_from api" -a "call"
 complete -c omni -f -n "__fish_seen_subcommand_from query" -a "run"
+complete -c omni -f -n "__fish_seen_subcommand_from schema" -a "omni setup doctor auth documents models connections folders labels schedules dashboards agentic embed unstable user-attributes admin users scim ai api query jobs completion version help exit-codes schema"
 complete -c omni -f -n "__fish_seen_subcommand_from jobs" -a "status"
 complete -c omni -f -n "__fish_seen_subcommand_from completion" -a "bash zsh fish"
 `

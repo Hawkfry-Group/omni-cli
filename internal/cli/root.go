@@ -52,7 +52,7 @@ func Execute(args []string, version string) int {
 	global.BoolVar(&verbose, "verbose", false, "Verbose logging")
 	global.BoolVar(&noInput, "no-input", false, "Disable interactive prompts")
 
-	if err := global.Parse(args); err != nil {
+	if err := global.Parse(normalizeArgsForGlobalFlags(args)); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			printUsage()
 			return 0
@@ -124,6 +124,10 @@ func Execute(args []string, version string) int {
 	case "version":
 		fmt.Println(version)
 		return 0
+	case "schema":
+		return runSchema(rt, cmdArgs)
+	case "exit-codes":
+		return runExitCodes(rt, cmdArgs)
 	case "completion":
 		return runCompletion(rt, cmdArgs)
 	case "setup":
@@ -234,6 +238,8 @@ Usage:
   omni [global flags] <command> [command flags]
 
 Commands:
+  schema    Print machine-readable command schema
+  exit-codes  Print stable automation exit codes
   doctor    Check connectivity, auth, and capabilities
   completion  Generate shell completion scripts
   setup     Configure Omni URL + token profile
@@ -270,6 +276,9 @@ Global flags:
   --verbose
 
 Examples:
+  omni schema
+  omni schema documents permissions
+  omni exit-codes --json
   omni doctor --json
   omni completion zsh
   omni setup
@@ -346,7 +355,7 @@ func isCommandAllowlisted(cmd string, allowlisted map[string]struct{}) bool {
 		return true
 	}
 	switch cmd {
-	case "help", "-h", "--help", "version":
+	case "help", "-h", "--help", "version", "schema", "exit-codes":
 		return true
 	}
 	_, ok := allowlisted[strings.ToLower(strings.TrimSpace(cmd))]

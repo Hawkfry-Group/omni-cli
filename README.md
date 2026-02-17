@@ -29,6 +29,9 @@ Agent usage mapping is documented in `docs/agent-command-map.md`.
 - Query flow with optional async wait call
 - Retry/backoff for idempotent API requests (`429`, `502`, `503`, `504`)
 - JSON output mode for scripting
+- Machine-readable CLI schema via `omni schema [command-path]`
+- Stable automation exit-code contract via `omni exit-codes`
+- Global flags can be provided before or after command path
 - OpenAPI-driven typed client generation (`oapi-codegen`)
 - CI workflow and GoReleaser packaging config
 
@@ -106,8 +109,12 @@ omni setup
 omni setup --non-interactive --profile prod --url https://acme.omniapp.co --token "$OMNI_PAT" --token-type pat --token-store auto
 omni --no-input setup --profile prod --url https://acme.omniapp.co --token "$OMNI_PAT" --token-type pat
 omni auth add --name prod --url https://acme.omniapp.co --token "$OMNI_PAT" --token-type pat --token-store keychain
+omni schema
+omni schema documents permissions
+omni exit-codes --json
 omni doctor --json
 omni --plain documents list --page-size 20
+omni documents list --page-size 20 --json
 OMNI_ENABLE_COMMANDS=query,documents omni documents list --page-size 20
 omni completion zsh > ~/.zsh/completions/_omni
 omni documents list --page-size 20
@@ -153,6 +160,8 @@ omni jobs status 12345
 ## Command overview
 
 - `omni setup`
+- `omni schema`
+- `omni exit-codes`
 - `omni doctor`
 - `omni auth add|list|remove|use|show|whoami`
 - `omni documents list|get|create|delete|rename|move|draft create|draft discard|duplicate|favorite add|favorite remove|access list|permissions get|permissions add|permissions update|permissions revoke|permissions settings|label add|label remove|labels bulk-update|queries|transfer-ownership`

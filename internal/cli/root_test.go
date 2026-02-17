@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"io"
 	"os"
 	"path/filepath"
@@ -144,6 +145,23 @@ func TestExecuteJSONPlainConflict(t *testing.T) {
 	}
 }
 
+func TestExecuteTrailingGlobalFlagAccepted(t *testing.T) {
+	tmp := t.TempDir()
+	configPath := filepath.Join(tmp, "config.json")
+	t.Setenv("OMNI_CONFIG", configPath)
+
+	stdout, stderr, exit := captureExecute(t, []string{"completion", "bash", "--json"})
+	if exit != 0 {
+		t.Fatalf("expected exit code 0, got %d (stderr=%q)", exit, stderr)
+	}
+	if !strings.Contains(stdout, "# bash completion for omni") {
+		t.Fatalf("expected bash completion output, got %q", stdout)
+	}
+	if strings.TrimSpace(stderr) != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+}
+
 func TestExecuteAllowlistBlocksCommand(t *testing.T) {
 	tmp := t.TempDir()
 	configPath := filepath.Join(tmp, "config.json")
@@ -162,6 +180,87 @@ func TestExecuteAllowlistBlocksCommand(t *testing.T) {
 	}
 	if !strings.Contains(stderr, "allowed_commands") {
 		t.Fatalf("expected allowlist details in stderr, got %q", stderr)
+	}
+}
+
+func TestExecuteSchemaWithoutConfig(t *testing.T) {
+	tmp := t.TempDir()
+	configPath := filepath.Join(tmp, "config.json")
+	t.Setenv("OMNI_CONFIG", configPath)
+
+	stdout, stderr, exit := captureExecute(t, []string{"schema"})
+	if exit != 0 {
+		t.Fatalf("expected exit code 0, got %d (stderr=%q)", exit, stderr)
+	}
+	if strings.TrimSpace(stderr) != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	if !strings.Contains(stdout, `"name": "omni"`) {
+		t.Fatalf("expected omni schema root, got %q", stdout)
+	}
+}
+
+func TestExecuteSchemaPath(t *testing.T) {
+	tmp := t.TempDir()
+	configPath := filepath.Join(tmp, "config.json")
+	t.Setenv("OMNI_CONFIG", configPath)
+
+	stdout, stderr, exit := captureExecute(t, []string{"schema", "documents", "permissions"})
+	if exit != 0 {
+		t.Fatalf("expected exit code 0, got %d (stderr=%q)", exit, stderr)
+	}
+	if strings.TrimSpace(stderr) != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	if !strings.Contains(stdout, `"name": "permissions"`) {
+		t.Fatalf("expected permissions schema, got %q", stdout)
+	}
+}
+
+func TestExecuteSchemaUnknownPath(t *testing.T) {
+	tmp := t.TempDir()
+	configPath := filepath.Join(tmp, "config.json")
+	t.Setenv("OMNI_CONFIG", configPath)
+
+	stdout, stderr, exit := captureExecute(t, []string{"schema", "nope"})
+	if exit != 2 {
+		t.Fatalf("expected exit code 2, got %d", exit)
+	}
+	if strings.TrimSpace(stdout) != "" {
+		t.Fatalf("expected empty stdout, got %q", stdout)
+	}
+	if !strings.Contains(stderr, "unknown command path for schema") {
+		t.Fatalf("expected schema path usage error, got %q", stderr)
+	}
+}
+
+func TestExecuteExitCodesJSONContract(t *testing.T) {
+	tmp := t.TempDir()
+	configPath := filepath.Join(tmp, "config.json")
+	t.Setenv("OMNI_CONFIG", configPath)
+
+	stdout, stderr, exit := captureExecute(t, []string{"exit-codes"})
+	if exit != 0 {
+		t.Fatalf("expected exit code 0, got %d (stderr=%q)", exit, stderr)
+	}
+	if strings.TrimSpace(stderr) != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+
+	var payload struct {
+		ExitCodes []struct {
+			ExitCode int    `json:"exit_code"`
+			Name     string `json:"name"`
+		} `json:"exit_codes"`
+	}
+	if err := json.Unmarshal([]byte(stdout), &payload); err != nil {
+		t.Fatalf("unmarshal exit-codes output: %v\nbody=%q", err, stdout)
+	}
+	if len(payload.ExitCodes) == 0 {
+		t.Fatalf("expected non-empty exit code contract, got %q", stdout)
+	}
+	if payload.ExitCodes[0].ExitCode != 0 || payload.ExitCodes[0].Name != "SUCCESS" {
+		t.Fatalf("unexpected first exit code entry: %#v", payload.ExitCodes[0])
 	}
 }
 

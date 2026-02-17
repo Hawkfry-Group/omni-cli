@@ -5,9 +5,11 @@ This CLI is command-first for AI agents (same model as `gogcli`): the agent shou
 ## Rules for agents
 
 1. Always start from explicit intent and choose one concrete command.
-2. Prefer `--json` for machine parsing.
-3. Use `omni api call` only when no typed command exists.
-4. Keep multi-step tasks explicit as a sequence of commands.
+2. Start by inspecting command shape with `omni schema [command-path]`.
+3. Prefer `--json` for machine parsing.
+4. Use `omni api call` only when no typed command exists.
+5. Keep multi-step tasks explicit as a sequence of commands.
+6. Branch on process exit code; inspect mapping with `omni exit-codes --json`.
 
 ## Intent to command mapping
 
@@ -37,4 +39,3 @@ Task: "Create a KPI workbook and store it in my personal folder."
 When a new Omni endpoint ships before typed CLI coverage, use:
 
 - `omni api call --method <GET|POST|PATCH|DELETE> --path /api/v1/... [--body-file payload.json] --json`
-
