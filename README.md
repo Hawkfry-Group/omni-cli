@@ -1,3 +1,6 @@
+# EARLY ALPHA
+This CLI is not yet suitable for use. Made public early to allow comments and early contributers
+
 # omni-cli
 
 Go CLI scaffold for Omni API.
