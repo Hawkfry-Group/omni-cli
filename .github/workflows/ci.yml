@@ -5,8 +5,11 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
-  test:
+  format:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,7 +24,38 @@ jobs:
             echo "$unformatted"
             exit 1
           fi
-      - name: Build
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build packages
         run: go build ./...
       - name: Test
         run: go test ./...
+
+  build-cli:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build omni binary
+        run: mkdir -p bin && go build -o bin/omni ./cmd/omni
+      - name: Smoke test omni binary
+        run: |
+          test -x ./bin/omni
+          ./bin/omni version | grep -Fx "dev"
+          ./bin/omni --help >/tmp/omni-help.txt
+          grep -Fq "omni - Omni CLI" /tmp/omni-help.txt
+          grep -Fq "Usage:" /tmp/omni-help.txt
+          ./bin/omni auth --help >/tmp/omni-auth-help.txt
+          grep -Fq "omni auth commands:" /tmp/omni-auth-help.txt
