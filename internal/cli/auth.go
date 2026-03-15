@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strings"
 
 	"github.com/omni-co/omni-cli/internal/auth"
 	"github.com/omni-co/omni-cli/internal/config"
@@ -46,13 +47,16 @@ func runAuthAdd(rt *runtime, args []string) int {
 	fs := flag.NewFlagSet("auth add", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 
-	var name, url, token, tokenType, tokenStore string
+	var name, url, authMode, defaultAuth, patToken, orgKey, legacyToken, legacyTokenType, tokenStore string
 	var setCurrent bool
 
 	fs.StringVar(&name, "name", "default", "Profile name")
 	fs.StringVar(&url, "url", "", "Omni instance URL")
-	fs.StringVar(&token, "token", "", "PAT or org API key")
-	fs.StringVar(&tokenType, "token-type", "pat", "pat or org")
+	fs.StringVar(&authMode, "auth-mode", "", "Auth setup: pat, org, or both")
+	fs.StringVar(&defaultAuth, "default-auth", "", "Default auth for general commands: pat or org")
+	fs.StringVar(&orgKey, "org-key", "", "Org API key to save")
+	fs.StringVar(&legacyToken, "token", "", "Legacy single token input")
+	fs.StringVar(&legacyTokenType, "token-type", "", "Legacy token type: pat or org")
 	fs.StringVar(&tokenStore, "token-store", "auto", "auto, keychain, or config")
 	fs.BoolVar(&setCurrent, "set-current", true, "Set as current profile")
 
@@ -64,11 +68,44 @@ func runAuthAdd(rt *runtime, args []string) int {
 		return usageFail(rt, err.Error())
 	}
 
-	if url == "" || token == "" {
-		return usageFail(rt, "--url and --token are required")
+	authMode, defaultAuth, patToken, orgKey = applyLegacySetupFlags(authMode, defaultAuth, patToken, orgKey, legacyToken, legacyTokenType)
+	authMode = normalizeSetupAuthMode(authMode)
+	defaultAuth = normalizeSetupAuthKind(defaultAuth)
+
+	if url == "" {
+		return usageFail(rt, "--url is required")
+	}
+	if authMode == "" {
+		return usageFail(rt, "--auth-mode is required (pat, org, or both)")
+	}
+	switch authMode {
+	case "pat":
+		defaultAuth = "pat"
+	case "org":
+		defaultAuth = "org"
+		if strings.TrimSpace(orgKey) == "" {
+			return usageFail(rt, "--org-key is required for auth-mode org")
+		}
+	case "both":
+		if strings.TrimSpace(orgKey) == "" {
+			return usageFail(rt, "--org-key is required for auth-mode both")
+		}
+		if defaultAuth == "" {
+			return usageFail(rt, "--default-auth is required for auth-mode both")
+		}
 	}
 
-	profile, warning, err := saveProfileWithToken(rt, name, url, tokenType, token, tokenStore, setCurrent)
+	if authMode == "pat" || authMode == "both" {
+		if strings.TrimSpace(patToken) == "" {
+			token, err := obtainPAT(rt, url)
+			if err != nil {
+				return fail(rt, 1, codeAuthError, "PAT browser login failed", map[string]any{"error": err.Error(), "base_url": url})
+			}
+			patToken = token
+		}
+	}
+
+	profile, warning, err := saveProfileWithCredentials(rt, name, url, defaultAuth, patToken, orgKey, tokenStore, setCurrent)
 	if err != nil {
 		return fail(rt, 1, codeConfigError, "failed to save profile", map[string]any{"error": err.Error()})
 	}
@@ -77,9 +114,12 @@ func runAuthAdd(rt *runtime, args []string) int {
 	}
 
 	if err := output.Print(map[string]any{
-		"ok":          true,
-		"profile":     name,
-		"token_store": profile.TokenStore,
+		"ok":           true,
+		"profile":      name,
+		"auth_mode":    profile.AuthMode(),
+		"default_auth": profile.DefaultAuth,
+		"pat_store":    profile.PATStore,
+		"org_store":    profile.OrgKeyStore,
 	}, rt.JSON, rt.Plain); err != nil {
 		return fail(rt, 1, codeAPIError, "failed to print output", map[string]any{"error": err.Error()})
 	}
@@ -95,16 +135,15 @@ func runAuthList(rt *runtime) int {
 	sort.Strings(names)
 	for _, name := range names {
 		profile := rt.Config.Profiles[name]
-		store := profile.TokenStore
-		if store == "" {
-			store = "config"
-		}
 		profiles = append(profiles, map[string]any{
-			"name":        name,
-			"base_url":    profile.BaseURL,
-			"token_type":  profile.TokenType,
-			"token_store": store,
-			"current":     rt.Config.CurrentProfile == name,
+			"name":             name,
+			"base_url":         profile.BaseURL,
+			"auth_mode":        profile.AuthMode(),
+			"default_auth":     profile.DefaultAuth,
+			"configured_auths": profile.ConfiguredAuths(),
+			"pat_store":        profile.PATStore,
+			"org_store":        profile.OrgKeyStore,
+			"current":          rt.Config.CurrentProfile == name,
 		})
 	}
 	if err := output.Print(map[string]any{"profiles": profiles}, rt.JSON, rt.Plain); err != nil {
@@ -139,9 +178,8 @@ func runAuthRemove(rt *runtime, args []string) int {
 		return fail(rt, 1, codeConfigMissing, "profile not found", map[string]any{"profile": name})
 	}
 
-	if profile.TokenStore == "keychain" && profile.TokenRef != "" && rt.Keychain != nil {
-		_ = rt.Keychain.Delete(profile.TokenRef)
-	}
+	deleteRemovedCredentialRef(rt.Keychain, profile.PATStore, profile.PATRef, "", "")
+	deleteRemovedCredentialRef(rt.Keychain, profile.OrgKeyStore, profile.OrgKeyRef, "", "")
 	delete(rt.Config.Profiles, name)
 	if rt.Config.CurrentProfile == name {
 		rt.Config.CurrentProfile = ""
@@ -164,11 +202,8 @@ func runAuthShow(rt *runtime, args []string) int {
 	fs := flag.NewFlagSet("auth show", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 
-	var profile, url, token, tokenType string
-	fs.StringVar(&profile, "profile", "", "Profile name")
-	fs.StringVar(&url, "url", "", "Omni instance URL")
-	fs.StringVar(&token, "token", "", "PAT or org API key")
-	fs.StringVar(&tokenType, "token-type", "", "pat or org")
+	var profileName string
+	fs.StringVar(&profileName, "profile", "", "Profile name")
 
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -178,25 +213,28 @@ func runAuthShow(rt *runtime, args []string) int {
 		return usageFail(rt, err.Error())
 	}
 
-	resolved, err := auth.Resolve(rt.Config, auth.Options{
-		ProfileFlag:   profile,
-		URLFlag:       url,
-		TokenFlag:     token,
-		TokenTypeFlag: tokenType,
-		ConfigPath:    rt.ConfigPath,
-		TokenStore:    rt.Keychain,
-	})
-	if err != nil {
-		return fail(rt, 1, codeAuthError, "failed to resolve auth profile", map[string]any{"error": err.Error()})
+	name := strings.TrimSpace(profileName)
+	if name == "" {
+		name = rt.Config.CurrentProfile
+	}
+	if name == "" {
+		name = "default"
+	}
+	profile, ok := rt.Config.Profiles[name]
+	if !ok {
+		return fail(rt, 1, codeConfigMissing, "profile not found", map[string]any{"profile": name})
 	}
 
-	profileCfg := rt.Config.Profiles[resolved.ProfileName]
 	if err := output.Print(map[string]any{
-		"profile":     resolved.ProfileName,
-		"base_url":    resolved.Profile.BaseURL,
-		"token_type":  resolved.Profile.TokenType,
-		"token_store": profileCfg.TokenStore,
-		"token":       auth.RedactToken(resolved.Profile.Token),
+		"profile":          name,
+		"base_url":         profile.BaseURL,
+		"auth_mode":        profile.AuthMode(),
+		"default_auth":     profile.DefaultAuth,
+		"configured_auths": profile.ConfiguredAuths(),
+		"pat_store":        profile.PATStore,
+		"org_store":        profile.OrgKeyStore,
+		"pat_token":        redactConfiguredToken(profile.PATToken, profile.PATRef),
+		"org_key":          redactConfiguredToken(profile.OrgKey, profile.OrgKeyRef),
 	}, rt.JSON, rt.Plain); err != nil {
 		return fail(rt, 1, codeAPIError, "failed to print output", map[string]any{"error": err.Error()})
 	}
@@ -209,11 +247,21 @@ func saveConfig(rt *runtime) error {
 
 func printAuthUsage() {
 	fmt.Print(`omni auth commands:
-  omni auth add --name <profile> --url <url> --token <token> [--token-type pat|org] [--token-store auto|keychain|config]
+  omni auth add --name <profile> --url <url> --auth-mode <pat|org|both> [--default-auth <pat|org>] [--org-key <key>] [--token-store auto|keychain|config]
   omni auth list
   omni auth remove <profile>
   omni auth use <profile>
-  omni auth show
+  omni auth show [--profile <name>]
   omni auth whoami
 `)
+}
+
+func redactConfiguredToken(token string, ref string) string {
+	if strings.TrimSpace(token) != "" {
+		return auth.RedactToken(strings.TrimSpace(token))
+	}
+	if strings.TrimSpace(ref) != "" {
+		return "stored-in-keychain"
+	}
+	return ""
 }

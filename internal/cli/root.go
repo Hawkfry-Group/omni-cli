@@ -26,6 +26,7 @@ type runtime struct {
 	Config     *config.Config
 	Resolved   *auth.Resolved
 	Keychain   secret.Store
+	PATLogin   PATLoginFunc
 }
 
 func Execute(args []string, version string) int {
@@ -35,6 +36,7 @@ func Execute(args []string, version string) int {
 	var profile string
 	var url string
 	var token string
+	var authMode string
 	var tokenType string
 	var configPath string
 	var asJSON bool
@@ -45,6 +47,7 @@ func Execute(args []string, version string) int {
 	global.StringVar(&profile, "profile", "", "Profile name to use")
 	global.StringVar(&url, "url", "", "Omni instance URL")
 	global.StringVar(&token, "token", "", "Omni API token (PAT or org key)")
+	global.StringVar(&authMode, "auth", "", "Auth to use: pat or org")
 	global.StringVar(&tokenType, "token-type", "", "Token type: pat or org")
 	global.StringVar(&configPath, "config", "", "Config file path")
 	global.BoolVar(&asJSON, "json", false, "Print JSON output")
@@ -98,6 +101,7 @@ func Execute(args []string, version string) int {
 		ConfigPath: configPath,
 		Config:     cfg,
 		Keychain:   secret.NewKeychainStore(),
+		PATLogin:   defaultPATLogin,
 	}
 
 	remaining := global.Args()
@@ -132,10 +136,8 @@ func Execute(args []string, version string) int {
 		return runCompletion(rt, cmdArgs)
 	case "setup":
 		return runSetup(rt, cmdArgs, setupDefaults{
-			Profile:   profile,
-			URL:       url,
-			Token:     token,
-			TokenType: tokenType,
+			Profile: profile,
+			URL:     url,
 		})
 	case "auth":
 		return runAuth(rt, cmdArgs)
@@ -150,16 +152,18 @@ func Execute(args []string, version string) int {
 			URLFlag:       url,
 			TokenFlag:     token,
 			TokenTypeFlag: tokenType,
+			AuthFlag:      authMode,
 			ConfigPath:    configPath,
 			TokenStore:    rt.Keychain,
+			RequireAuth:   requiredAuthForCommand(cmd),
 		})
 		if err != nil {
 			details := map[string]any{"error": err.Error()}
 			if err.Error() == "missing Omni URL; set with --url or OMNI_URL or save in profile" {
 				return fail(rt, 1, codeConfigMissing, "missing Omni URL configuration", details)
 			}
-			if err.Error() == "missing API token; set with --token or OMNI_TOKEN or save in profile" {
-				return fail(rt, 1, codeConfigMissing, "missing API token configuration", details)
+			if strings.HasPrefix(err.Error(), "missing PAT") || strings.HasPrefix(err.Error(), "missing org API key") {
+				return fail(rt, 1, codeConfigMissing, "missing Omni auth configuration", details)
 			}
 			if len(cfg.Profiles) == 0 {
 				return fail(rt, 1, codeConfigMissing, "no profiles configured; run `omni setup`", details)
@@ -231,6 +235,15 @@ func Execute(args []string, version string) int {
 	}
 }
 
+func requiredAuthForCommand(cmd string) string {
+	switch cmd {
+	case "admin", "users", "scim":
+		return "org"
+	default:
+		return ""
+	}
+}
+
 func printUsage() {
 	fmt.Print(`omni - Omni CLI
 
@@ -242,7 +255,7 @@ Commands:
   exit-codes  Print stable automation exit codes
   doctor    Check connectivity, auth, and capabilities
   completion  Generate shell completion scripts
-  setup     Configure Omni URL + token profile
+  setup     Configure Omni URL and auth profile
   auth      Manage profiles and tokens
   documents List and inspect documents
   models    Manage models
@@ -267,6 +280,7 @@ Commands:
 Global flags:
   --profile <name>
   --url <https://instance.omniapp.co>
+  --auth <pat|org>
   --token <token>
   --token-type <pat|org>
   --config <path>
@@ -282,7 +296,7 @@ Examples:
   omni doctor --json
   omni completion zsh
   omni setup
-  omni setup --non-interactive --profile prod --url https://acme.omniapp.co --token $OMNI_PAT --token-type pat
+  omni setup --profile prod --url https://acme.omniapp.co --auth-mode both --org-key $OMNI_ORG_KEY --default-auth pat
   omni documents list --page-size 20
   omni documents rename wk_abc123 --name "Q1 Dashboard"
   omni documents permissions add wk_abc123 --file permits.json
@@ -307,7 +321,7 @@ Examples:
   omni ai generate-query --model-id <model-uuid> --prompt "Revenue by month"
   omni ai workbook --model-id <model-uuid> --prompt "Top 10 customers by revenue"
   omni api call --method GET --path /api/v1/documents
-  omni auth add --name prod --url https://acme.omniapp.co --token $OMNI_PAT --token-type pat --token-store auto
+  omni auth add --name prod --url https://acme.omniapp.co --auth-mode org --org-key $OMNI_ORG_KEY --token-store auto
   omni auth use prod
   omni query run --file query.json --wait --result-type json
   omni jobs status 12345
