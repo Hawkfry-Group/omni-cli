@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/omni-co/omni-cli/internal/config"
@@ -68,6 +69,72 @@ func TestRunAuthAddBothUsesBrowserLoginFlowForPAT(t *testing.T) {
 	profile := rt.Config.Profiles["prod"]
 	if profile.PATToken != "pat-from-browser" || profile.OrgKey != "org-key-123" {
 		t.Fatalf("expected browser PAT and org key stored, got %#v", profile)
+	}
+}
+
+func TestRunAuthAddOrgOnlyDoesNotTriggerPATLogin(t *testing.T) {
+	tmp := t.TempDir()
+	calledPATLogin := false
+	rt := &runtime{
+		ConfigPath: filepath.Join(tmp, "config.json"),
+		Config:     &config.Config{Profiles: map[string]config.Profile{}},
+		Keychain:   &mockSecretStore{available: false},
+		PATLogin: func(baseURL string) (string, error) {
+			calledPATLogin = true
+			return "pat-from-browser", nil
+		},
+	}
+
+	exit := captureRuntimeOutput(t, func() int {
+		return runAuthAdd(rt, []string{
+			"--name", "prod",
+			"--url", "https://acme.omniapp.co",
+			"--auth-mode", "org",
+			"--org-key", "org-key-123",
+			"--token-store", "config",
+		})
+	})
+	if exit != 0 {
+		t.Fatalf("expected exit 0, got %d", exit)
+	}
+	if calledPATLogin {
+		t.Fatal("expected org-only auth add to skip PAT login")
+	}
+
+	profile := rt.Config.Profiles["prod"]
+	if profile.OrgKey != "org-key-123" || profile.PATToken != "" {
+		t.Fatalf("expected only org key stored, got %#v", profile)
+	}
+}
+
+func TestRunAuthAddPATLoginFailureReturnsAuthError(t *testing.T) {
+	tmp := t.TempDir()
+	rt := &runtime{
+		JSON:       true,
+		ConfigPath: filepath.Join(tmp, "config.json"),
+		Config:     &config.Config{Profiles: map[string]config.Profile{}},
+		Keychain:   &mockSecretStore{available: false},
+		PATLogin: func(baseURL string) (string, error) {
+			return "", os.ErrPermission
+		},
+	}
+
+	stdout, stderr, exit := captureRuntimeIO(t, func() int {
+		return runAuthAdd(rt, []string{
+			"--name", "prod",
+			"--url", "https://acme.omniapp.co",
+			"--auth-mode", "pat",
+			"--token-store", "config",
+		})
+	})
+	if exit != 1 {
+		t.Fatalf("expected exit 1, got %d", exit)
+	}
+	if strings.TrimSpace(stdout) != "" {
+		t.Fatalf("expected empty stdout, got %q", stdout)
+	}
+	if !strings.Contains(stderr, codeAuthError) || !strings.Contains(stderr, "PAT browser login failed") {
+		t.Fatalf("expected auth error output, got %q", stderr)
 	}
 }
 
