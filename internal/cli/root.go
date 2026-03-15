@@ -142,7 +142,7 @@ func Execute(args []string, version string) int {
 	case "auth":
 		return runAuth(rt, cmdArgs)
 	case "doctor", "query", "jobs", "documents", "models", "connections", "folders", "labels", "schedules", "dashboards", "agentic", "embed", "unstable", "user-attributes", "admin", "users", "scim", "ai", "api":
-		if len(cmdArgs) == 0 || wantsSubcommandHelp(cmdArgs) {
+		if (cmd != "doctor" && len(cmdArgs) == 0) || wantsSubcommandHelp(cmdArgs) {
 			printCommandUsage(cmd)
 			return 0
 		}
