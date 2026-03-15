@@ -136,6 +136,7 @@ omni models list --name marketing
 omni models validate 550e8400-e29b-41d4-a716-446655440000
 omni models topics list 550e8400-e29b-41d4-a716-446655440000
 omni connections list
+omni connections create
 omni connections create --file connection.json
 omni connections dbt update 550e8400-e29b-41d4-a716-446655440000 --file connection-dbt.json
 omni connections schedules list 550e8400-e29b-41d4-a716-446655440000
@@ -191,6 +192,7 @@ See also:
 - `omni documents list|get|create|delete|rename|move|draft create|draft discard|duplicate|favorite add|favorite remove|access list|permissions get|permissions add|permissions update|permissions revoke|permissions settings|label add|label remove|labels bulk-update|queries|transfer-ownership`
 - `omni models list|get|create|refresh|validate|branch delete|branch merge|cache-reset|topics list|get|update|delete|views list|update|delete|fields create|update|delete|git get|create|update|delete|sync|migrate|content-validator get|replace|yaml get|create|delete`
 - `omni connections list|create|update|dbt get|dbt update|dbt delete|schedules list|schedules create|schedules get|schedules update|schedules delete|environments list|environments create|environments update|environments delete`
+  `connections create` supports an interactive wizard or `--file` JSON input
 - `omni folders list|create|delete|permissions get|permissions add|permissions update|permissions revoke`
 - `omni labels list|get|create|update|delete`
 - `omni schedules list|create|get|update|delete|pause|resume|trigger|recipients get|recipients add|recipients remove|transfer-ownership`
