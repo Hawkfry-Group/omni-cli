@@ -1,5 +1,25 @@
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Build outputs
 bin/
 dist/
+
+# Go test and coverage artifacts
+coverage.out
+*.coverprofile
+*.test
+
+# Editor and OS noise
+.idea/
+.vscode/
+*.swp
+*.swo
+*.orig
 *.log
 .DS_Store
+
+# Generated OpenAPI intermediate
 api/openapi.codegen.json
