@@ -1,10 +1,12 @@
 package client
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 )
 
 type roundTripFunc func(*http.Request) (*http.Response, error)
@@ -76,5 +78,37 @@ func TestParseRetryAfterSeconds(t *testing.T) {
 	d := parseRetryAfter("2")
 	if d < 2_000_000_000 || d > 2_100_000_000 {
 		t.Fatalf("expected around 2s, got %v", d)
+	}
+}
+
+func TestRetryHelpers(t *testing.T) {
+	if _, ok := newRetryTransport(nil).(*retryTransport); !ok {
+		t.Fatal("expected newRetryTransport to return retryTransport")
+	}
+	if !isRetryableError(io.EOF) {
+		t.Fatal("expected non-nil error to be retryable")
+	}
+	if isRetryableError(nil) {
+		t.Fatal("expected nil error to be non-retryable")
+	}
+
+	future := time.Now().Add(1500 * time.Millisecond).UTC().Format(http.TimeFormat)
+	if d := parseRetryAfter(future); d <= 0 {
+		t.Fatalf("expected positive duration for HTTP date, got %v", d)
+	}
+	if d := parseRetryAfter("garbage"); d != 0 {
+		t.Fatalf("expected zero duration for invalid retry-after, got %v", d)
+	}
+}
+
+func TestSleepBackoffReturnsOnCanceledContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "https://example.com", nil)
+
+	start := time.Now()
+	sleepBackoff(3, time.Second, req)
+	if elapsed := time.Since(start); elapsed > 50*time.Millisecond {
+		t.Fatalf("expected canceled backoff to return quickly, took %v", elapsed)
 	}
 }

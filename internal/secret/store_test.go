@@ -1,6 +1,9 @@
 package secret
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 type fakeStore struct{ available bool }
 
@@ -34,5 +37,46 @@ func TestPickExplicitKeychainUnavailableErrors(t *testing.T) {
 	_, err := Pick("keychain", fakeStore{available: false})
 	if err == nil {
 		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestConfigStoreOperations(t *testing.T) {
+	store := NewConfigStore()
+	if !store.Available() {
+		t.Fatal("expected config store to be available")
+	}
+	if store.Name() != "config" {
+		t.Fatalf("expected config store name, got %q", store.Name())
+	}
+	if _, err := store.Save("default", ""); err == nil {
+		t.Fatal("expected empty token save to fail")
+	}
+	ref, err := store.Save("default", "token")
+	if err != nil {
+		t.Fatalf("Save returned error: %v", err)
+	}
+	if ref != "" {
+		t.Fatalf("expected config store save to return empty ref, got %q", ref)
+	}
+	if err := store.Delete("ignored"); err != nil {
+		t.Fatalf("Delete returned error: %v", err)
+	}
+	if _, err := store.Get("ignored"); err == nil || !strings.Contains(err.Error(), "does not support token references") {
+		t.Fatalf("expected unsupported get error, got %v", err)
+	}
+}
+
+func TestPickConfigAndInvalidPreference(t *testing.T) {
+	picked, err := Pick("config", fakeStore{available: true})
+	if err != nil {
+		t.Fatalf("Pick returned error: %v", err)
+	}
+	if picked.Name() != "config" {
+		t.Fatalf("expected config store, got %q", picked.Name())
+	}
+
+	_, err = Pick("bogus", fakeStore{available: true})
+	if err == nil || !strings.Contains(err.Error(), "invalid token store") {
+		t.Fatalf("expected invalid token store error, got %v", err)
 	}
 }
