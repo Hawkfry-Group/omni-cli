@@ -1,103 +1,40 @@
 # EARLY ALPHA
-This CLI is not yet suitable for use. Made public early to allow comments and early contributers
+This repository is public early so the CLI contract can be reviewed in the open. Expect breaking changes while the command surface, auth flows, and automation guarantees are still settling.
 
 # omni-cli
 
-Go CLI scaffold for Omni API.
+Automation-first Omni CLI for agents, workflows, and machine-to-machine use.
 
-## Status
+This repository is not trying to be a human-first terminal app. The primary goal is a stable command contract that other tools can call safely:
 
-This scaffold now uses generated typed Go client code from Omni OpenAPI.
-Agent usage mapping is documented in `docs/agent-command-map.md`.
+- JSON-first output for automation
+- stable exit codes
+- machine-readable command discovery via `omni schema`
+- explicit auth/profile handling
+- raw API access via `omni api call`
 
-## Features in this scaffold
+The CLI is built from a generated Omni OpenAPI client plus handwritten command and auth logic. Agent usage mapping is documented in [docs/agent-command-map.md](docs/agent-command-map.md).
 
-- Profile-based auth in `~/.omni/config.json`
-- Supports PAT auth, org API keys, or both in one profile
-- Token storage backends: `keychain` (macOS) or `config` fallback
-- Config precedence: flag > env > config file
-- `omni setup` wizard (interactive + non-interactive)
-- `omni doctor` capability checks (base/query/admin)
-- `omni completion` scripts for `bash`, `zsh`, `fish`
-- Core resource commands: `documents`, `models`, `connections`, `folders`, `labels`, `schedules` (including create/update/delete/permissions flows)
-- Org-admin command groups for `users` and `scim` management
-- Omni AI command group for topic selection and natural-language query generation
-- Agentic async job command group (`agentic`)
-- Dashboard download/filter command group (`dashboards`)
-- Embed SSO session command group (`embed`)
-- Unstable API command group (`unstable`)
-- User attribute definitions command group (`user-attributes`)
-- Escape hatch for complete coverage: `omni api call` for authenticated raw endpoint calls
-- Org-key admin commands: `admin users list`, `admin groups list`
-- Query flow with optional async wait call
-- Retry/backoff for idempotent API requests (`429`, `502`, `503`, `504`)
-- JSON output mode for scripting
-- Machine-readable CLI schema via `omni schema [command-path]`
-- Stable automation exit-code contract via `omni exit-codes`
-- Global flags can be provided before or after command path
-- OpenAPI-driven typed client generation (`oapi-codegen`)
-- CI workflow and GoReleaser packaging config
+## What The Repo Does Today
 
-## Folder layout
+- wraps the Omni API in typed command groups such as `documents`, `models`, `connections`, `folders`, `labels`, `schedules`, `dashboards`, `query`, `users`, and `scim`
+- supports PAT auth, org API keys, or both on one profile
+- uses browser login for PAT setup
+- supports keychain-backed secrets on macOS with config-file fallback
+- provides `doctor`, `schema`, `exit-codes`, and raw `api call` for agent/runtime integration
+- includes an interactive connection creation wizard for supported dialects, with `--file` still available for automation
 
-- `cmd/omni`: main entrypoint
-- `internal/cli`: command handlers
-- `internal/config`: config load/save
-- `internal/auth`: profile and token resolution
-- `internal/client`: Omni HTTP client wrapper
-- `internal/client/gen`: generated OpenAPI client code
-- `internal/output`: human/json output helpers
-- `api/openapi.json`: source spec (replace with your instance spec)
-- `scripts/update_openapi.sh`: fetch and validate instance OpenAPI
-- `scripts/generate_client.sh`: normalize 3.1 schema and regenerate client
+## Automation Contract
 
-## Global flags
+- Success payloads are written to `stdout`.
+- Error payloads are written to `stderr`.
+- `--json` is the preferred mode for callers and agents.
+- `--plain` provides stable TSV-style output for list-shaped responses.
+- `omni exit-codes` prints the stable exit-code and error-code contract.
+- `omni schema [command path]` prints machine-readable command metadata.
+- `OMNI_ENABLE_COMMANDS` can restrict the allowed top-level command set for embedded/agent use.
 
-- `--profile`
-- `--url`
-- `--token`
-- `--auth pat|org`
-- `--token-type pat|org` (legacy override)
-- `--config`
-- `--json`
-- `--plain`
-- `--no-input`
-- `--verbose`
-
-## Environment variables
-
-- `OMNI_PROFILE`
-- `OMNI_URL`
-- `OMNI_AUTH`
-- `OMNI_ORG_KEY`
-- `OMNI_PAT` (manual override; PAT is normally acquired by browser login)
-- `OMNI_TOKEN`
-- `OMNI_TOKEN_TYPE`
-- `OMNI_CONFIG`
-- `OMNI_PLAIN`
-- `OMNI_NO_INPUT`
-- `OMNI_ENABLE_COMMANDS`
-
-## Shell completion
-
-```bash
-# zsh
-mkdir -p ~/.zsh/completions
-omni completion zsh > ~/.zsh/completions/_omni
-
-# bash
-omni completion bash > ~/.local/share/bash-completion/completions/omni
-
-# fish
-omni completion fish > ~/.config/fish/completions/omni.fish
-```
-
-## Error contract
-
-- Success payloads are printed to `stdout`.
-- Error payloads are printed to `stderr`.
-- `--plain` prints stable tab-delimited output for list-style responses.
-- In `--json` mode, errors use:
+Error shape in `--json` mode:
 
 ```json
 {
@@ -109,90 +46,121 @@ omni completion fish > ~/.config/fish/completions/omni.fish
 }
 ```
 
-## Example usage
+## Auth Model
+
+Profiles live in `~/.omni/config.json` by default.
+
+- `pat`: PAT acquired through browser login
+- `org`: org API key entered directly
+- `both`: PAT plus org key on one profile
+
+Runtime behavior:
+
+- general commands use the profile's `default_auth`
+- `admin`, `users`, and `scim` require org auth automatically
+- `--auth pat|org` overrides the auth used for the current command
+- `--token` and `--token-type` still work as legacy/manual overrides
+
+PAT flow details are documented in [docs/pat-auth-flow.md](docs/pat-auth-flow.md).
+
+## Setup
+
+Interactive setup:
 
 ```bash
 omni setup
-omni setup --profile prod --url https://acme.omniapp.co --auth-mode pat --token-store auto
-omni setup --non-interactive --profile prod --url https://acme.omniapp.co --auth-mode org --org-key "$OMNI_ORG_KEY" --token-store auto
 omni setup --profile prod --url https://acme.omniapp.co --auth-mode both --org-key "$OMNI_ORG_KEY" --default-auth pat
-omni --no-input setup --profile prod --url https://acme.omniapp.co --auth-mode org --org-key "$OMNI_ORG_KEY"
+```
+
+Non-interactive setup:
+
+```bash
+omni setup --non-interactive --profile prod --url https://acme.omniapp.co --auth-mode org --org-key "$OMNI_ORG_KEY" --token-store auto
 omni auth add --name prod --url https://acme.omniapp.co --auth-mode both --org-key "$OMNI_ORG_KEY" --default-auth pat --token-store keychain
-omni --auth org documents list --page-size 20
+omni auth use prod
+omni auth show --profile prod --json
+```
+
+Supported environment variables:
+
+- `OMNI_PROFILE`
+- `OMNI_URL`
+- `OMNI_AUTH`
+- `OMNI_ORG_KEY`
+- `OMNI_PAT` for manual override only; normal PAT setup is browser-based
+- `OMNI_TOKEN`
+- `OMNI_TOKEN_TYPE`
+- `OMNI_CONFIG`
+- `OMNI_PLAIN`
+- `OMNI_NO_INPUT`
+- `OMNI_ENABLE_COMMANDS`
+
+## Flag Parsing
+
+Global flags can be provided before or after the command path:
+
+```bash
+omni --json documents list
+omni documents list --json
+```
+
+Command-local flags should be placed before positional arguments. For example:
+
+```bash
+omni documents rename --name "Q1 Dashboard" wk_abc123
+omni folders create --scope organization "Team Reports"
+omni labels create --homepage true finance
+```
+
+## Machine-Oriented Examples
+
+```bash
 omni schema
 omni schema documents permissions
 omni exit-codes --json
 omni doctor --json
-omni --plain documents list --page-size 20
-omni documents list --page-size 20 --json
-OMNI_ENABLE_COMMANDS=query,documents omni documents list --page-size 20
-omni completion zsh > ~/.zsh/completions/_omni
-omni documents list --page-size 20
-omni documents get wk_abc123
-omni documents create --file document.json
-omni documents rename wk_abc123 --name "Executive Dashboard"
-omni documents permissions add wk_abc123 --file permits.json
-omni models list --name marketing
-omni models validate 550e8400-e29b-41d4-a716-446655440000
-omni models topics list 550e8400-e29b-41d4-a716-446655440000
-omni connections list
-omni connections create
-omni connections create --file connection.json
-omni connections dbt update 550e8400-e29b-41d4-a716-446655440000 --file connection-dbt.json
-omni connections schedules list 550e8400-e29b-41d4-a716-446655440000
-omni connections environments list
-omni folders list --page-size 20
-omni folders create "Team Reports" --scope organization
-omni folders permissions get 550e8400-e29b-41d4-a716-446655440000
-omni labels list
-omni labels create finance --homepage true
-omni schedules list --page-size 20
-omni schedules create --file schedule.json
-omni schedules update 550e8400-e29b-41d4-a716-446655440000
-omni schedules recipients add 550e8400-e29b-41d4-a716-446655440000 --file recipients.json
-omni schedules trigger 550e8400-e29b-41d4-a716-446655440000
-omni dashboards download wk_abc123 --file dashboard-download.json
-omni dashboards filters update wk_abc123 --file dashboard-filters.json
-omni agentic submit --file agentic-job.json
-omni embed sso generate-session --file embed-session.json
-omni unstable documents export wk_abc123
-omni user-attributes list
-omni admin users list --count 10
-omni users list-email-only --page-size 20
-omni scim users list --count 20
-omni ai generate-query --model-id 550e8400-e29b-41d4-a716-446655440000 --prompt "Revenue by month"
-omni ai workbook --model-id 550e8400-e29b-41d4-a716-446655440000 --prompt "Top 10 customers by revenue"
 omni api call --method GET --path /api/v1/documents
-omni auth whoami
 omni query run --file query.json --result-type json --wait
-omni jobs status 12345
+omni user-attributes list --json
+OMNI_ENABLE_COMMANDS=query,documents omni documents list --page-size 20 --json
 ```
 
-## Auth model
+## Command Surface
 
-- `omni setup` asks what auth to configure: `pat`, `org`, or `both`
-- PAT setup uses browser login rather than asking the user to paste a token
-- Profiles can store both a PAT and an org key at the same time
-- General commands use the profile's `default_auth`
-- Org-only commands such as `admin`, `users`, and `scim` automatically use the org key
-- `--auth pat|org` forces a specific credential for the current command
-- `OMNI_PAT`, `--token`, and `--token-type` are still accepted as manual/legacy overrides
+Top-level commands:
 
-See also:
+- `schema`
+- `exit-codes`
+- `doctor`
+- `completion`
+- `setup`
+- `auth`
+- `documents`
+- `models`
+- `connections`
+- `folders`
+- `labels`
+- `schedules`
+- `dashboards`
+- `agentic`
+- `embed`
+- `unstable`
+- `user-attributes`
+- `admin`
+- `users`
+- `scim`
+- `ai`
+- `api`
+- `query`
+- `jobs`
+- `version`
 
-- `docs/pat-auth-flow.md`
+High-value subcommands:
 
-## Command overview
-
-- `omni setup`
-- `omni schema`
-- `omni exit-codes`
-- `omni doctor`
 - `omni auth add|list|remove|use|show|whoami`
 - `omni documents list|get|create|delete|rename|move|draft create|draft discard|duplicate|favorite add|favorite remove|access list|permissions get|permissions add|permissions update|permissions revoke|permissions settings|label add|label remove|labels bulk-update|queries|transfer-ownership`
 - `omni models list|get|create|refresh|validate|branch delete|branch merge|cache-reset|topics list|get|update|delete|views list|update|delete|fields create|update|delete|git get|create|update|delete|sync|migrate|content-validator get|replace|yaml get|create|delete`
 - `omni connections list|create|update|dbt get|dbt update|dbt delete|schedules list|schedules create|schedules get|schedules update|schedules delete|environments list|environments create|environments update|environments delete`
-  `connections create` supports an interactive wizard or `--file` JSON input
 - `omni folders list|create|delete|permissions get|permissions add|permissions update|permissions revoke`
 - `omni labels list|get|create|update|delete`
 - `omni schedules list|create|get|update|delete|pause|resume|trigger|recipients get|recipients add|recipients remove|transfer-ownership`
@@ -210,29 +178,97 @@ See also:
 - `omni query run`
 - `omni jobs status`
 
-## Build
+The bundled OpenAPI coverage report is tracked in:
 
-`go` is required locally.
+- [docs/endpoint-coverage.md](docs/endpoint-coverage.md)
+- [docs/endpoint-coverage.json](docs/endpoint-coverage.json)
+
+## Connections Wizard
+
+`omni connections create` can run interactively in a terminal, or accept `--file` JSON for automation.
+
+Supported interactive dialects:
+
+- `postgres`
+- `redshift`
+- `mysql`
+- `mariadb`
+- `mssql`
+- `snowflake`
+- `databricks`
+- `bigquery`
+- `athena`
+- `motherduck`
+- `clickhouse`
+- `exasol`
+- `starrocks`
+- `trino`
+
+Examples:
+
+```bash
+omni connections create
+omni connections create --file connection.json
+omni connections update 550e8400-e29b-41d4-a716-446655440000 --file connection-update.json
+omni connections environments list
+omni connections schedules list 550e8400-e29b-41d4-a716-446655440000
+```
+
+## Human Debugging Examples
+
+These are still useful when developing the CLI, but they are secondary to the machine-facing contract.
+
+```bash
+omni completion zsh > ~/.zsh/completions/_omni
+omni documents list --page-size 20
+omni documents get wk_abc123
+omni documents rename --name "Executive Dashboard" wk_abc123
+omni documents permissions add wk_abc123 --file permits.json
+omni models list --name marketing
+omni folders permissions get 550e8400-e29b-41d4-a716-446655440000
+omni labels create --homepage true finance
+omni schedules create --file schedule.json
+omni schedules recipients add 550e8400-e29b-41d4-a716-446655440000 --file recipients.json
+omni dashboards filters update wk_abc123 --file dashboard-filters.json
+omni agentic submit --file agentic-job.json
+omni embed sso generate-session --file embed-session.json
+omni unstable documents export wk_abc123
+omni users list-email-only --page-size 20
+omni scim users list --count 20
+omni ai generate-query --model-id 550e8400-e29b-41d4-a716-446655440000 --prompt "Revenue by month"
+omni jobs status 12345
+```
+
+## Repo Layout
+
+- `cmd/omni`: entrypoint
+- `internal/cli`: handwritten command handlers and runtime wiring
+- `internal/auth`: auth resolution and profile behavior
+- `internal/config`: config load/save and profile format
+- `internal/client`: handwritten client wrappers
+- `internal/client/gen`: generated OpenAPI client code
+- `internal/output`: stdout/stderr and plain/json formatting helpers
+- `internal/secret`: keychain/config credential storage abstraction
+- `api/openapi.json`: checked-in Omni API spec
+- `scripts/update_openapi.sh`: fetch and normalize an Omni OpenAPI spec
+- `scripts/generate_client.sh`: regenerate the typed client
+
+## Build And Release
 
 ```bash
 make build
 make test
+make coverage-report
 ```
 
-## Refresh OpenAPI Client
+Refresh the API client:
 
 ```bash
 ./scripts/update_openapi.sh https://your-instance.omniapp.co/openapi.json
 go generate ./internal/client/gen
-make coverage-report
 ```
 
-Coverage outputs:
-
-- `docs/endpoint-coverage.md`
-- `docs/endpoint-coverage.json`
-
-## Release
+Build release artifacts locally:
 
 ```bash
 goreleaser release --snapshot --clean
