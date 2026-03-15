@@ -1,8 +1,8 @@
 package cli
 
 import (
-	"strings"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/omni-co/omni-cli/internal/config"
