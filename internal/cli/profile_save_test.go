@@ -29,33 +29,33 @@ func (m *mockSecretStore) Delete(ref string) error {
 	return nil
 }
 
-func TestSaveProfileWithTokenAutoUsesKeychain(t *testing.T) {
+func TestSaveProfileWithCredentialsAutoUsesKeychain(t *testing.T) {
 	tmp := t.TempDir()
 	rt := &runtime{
 		ConfigPath: filepath.Join(tmp, "config.json"),
 		Config:     &config.Config{Profiles: map[string]config.Profile{}},
-		Keychain:   &mockSecretStore{available: true, saveRef: "profile-ref"},
+		Keychain:   &mockSecretStore{available: true},
 	}
 
-	profile, warning, err := saveProfileWithToken(rt, "prod", "https://acme.omniapp.co", "pat", "super-token", "auto", true)
+	profile, warning, err := saveProfileWithCredentials(rt, "prod", "https://acme.omniapp.co", "pat", "super-token", "", "auto", true)
 	if err != nil {
-		t.Fatalf("saveProfileWithToken returned error: %v", err)
+		t.Fatalf("saveProfileWithCredentials returned error: %v", err)
 	}
 	if warning != "" {
 		t.Fatalf("expected no warning, got %q", warning)
 	}
-	if profile.TokenStore != "keychain" {
-		t.Fatalf("expected keychain token store, got %q", profile.TokenStore)
+	if profile.PATStore != "keychain" {
+		t.Fatalf("expected keychain PAT store, got %q", profile.PATStore)
 	}
-	if profile.TokenRef != "profile-ref" {
-		t.Fatalf("expected token ref profile-ref, got %q", profile.TokenRef)
+	if profile.PATRef != "prod:pat" {
+		t.Fatalf("expected PAT ref prod:pat, got %q", profile.PATRef)
 	}
-	if profile.Token != "" {
-		t.Fatalf("expected no plaintext token in config profile, got %q", profile.Token)
+	if profile.PATToken != "" {
+		t.Fatalf("expected no plaintext PAT in config profile, got %q", profile.PATToken)
 	}
 }
 
-func TestSaveProfileWithTokenAutoFallsBackToConfig(t *testing.T) {
+func TestSaveProfileWithCredentialsAutoFallsBackToConfig(t *testing.T) {
 	tmp := t.TempDir()
 	rt := &runtime{
 		ConfigPath: filepath.Join(tmp, "config.json"),
@@ -63,42 +63,61 @@ func TestSaveProfileWithTokenAutoFallsBackToConfig(t *testing.T) {
 		Keychain:   &mockSecretStore{available: false},
 	}
 
-	profile, warning, err := saveProfileWithToken(rt, "prod", "https://acme.omniapp.co", "pat", "super-token", "auto", true)
+	profile, warning, err := saveProfileWithCredentials(rt, "prod", "https://acme.omniapp.co", "pat", "super-token", "", "auto", true)
 	if err != nil {
-		t.Fatalf("saveProfileWithToken returned error: %v", err)
+		t.Fatalf("saveProfileWithCredentials returned error: %v", err)
 	}
 	if warning == "" {
 		t.Fatal("expected fallback warning, got empty string")
 	}
-	if profile.TokenStore != "config" {
-		t.Fatalf("expected config token store, got %q", profile.TokenStore)
+	if profile.PATStore != "config" {
+		t.Fatalf("expected config PAT store, got %q", profile.PATStore)
 	}
-	if profile.Token != "super-token" {
-		t.Fatalf("expected plaintext token in config fallback, got %q", profile.Token)
+	if profile.PATToken != "super-token" {
+		t.Fatalf("expected plaintext PAT in config fallback, got %q", profile.PATToken)
 	}
 }
 
-func TestSaveProfileWithTokenDeletesOldKeychainRefWhenSwitchingToConfig(t *testing.T) {
+func TestSaveProfileWithCredentialsDeletesOldKeychainRefWhenSwitchingToConfig(t *testing.T) {
 	store := &mockSecretStore{available: true}
 	tmp := t.TempDir()
 	rt := &runtime{
 		ConfigPath: filepath.Join(tmp, "config.json"),
 		Config: &config.Config{Profiles: map[string]config.Profile{
 			"prod": {
-				BaseURL:    "https://acme.omniapp.co",
-				TokenType:  "pat",
-				TokenStore: "keychain",
-				TokenRef:   "old-ref",
+				BaseURL:  "https://acme.omniapp.co",
+				PATStore: "keychain",
+				PATRef:   "old-ref",
 			},
 		}},
 		Keychain: store,
 	}
 
-	_, _, err := saveProfileWithToken(rt, "prod", "https://acme.omniapp.co", "pat", "new-token", "config", true)
+	_, _, err := saveProfileWithCredentials(rt, "prod", "https://acme.omniapp.co", "pat", "new-token", "", "config", true)
 	if err != nil {
-		t.Fatalf("saveProfileWithToken returned error: %v", err)
+		t.Fatalf("saveProfileWithCredentials returned error: %v", err)
 	}
 	if len(store.deleteRefs) != 1 || store.deleteRefs[0] != "old-ref" {
 		t.Fatalf("expected old keychain ref deletion, got %#v", store.deleteRefs)
+	}
+}
+
+func TestSaveProfileWithCredentialsStoresBothAuths(t *testing.T) {
+	tmp := t.TempDir()
+	rt := &runtime{
+		ConfigPath: filepath.Join(tmp, "config.json"),
+		Config:     &config.Config{Profiles: map[string]config.Profile{}},
+		Keychain:   &mockSecretStore{available: false},
+	}
+
+	profile, _, err := saveProfileWithCredentials(rt, "prod", "https://acme.omniapp.co", "pat", "pat-token", "org-token", "config", true)
+	if err != nil {
+		t.Fatalf("saveProfileWithCredentials returned error: %v", err)
+	}
+	if profile.DefaultAuth != "pat" {
+		t.Fatalf("expected default auth pat, got %q", profile.DefaultAuth)
+	}
+	if profile.PATToken != "pat-token" || profile.OrgKey != "org-token" {
+		t.Fatalf("expected both credentials stored, got %#v", profile)
 	}
 }

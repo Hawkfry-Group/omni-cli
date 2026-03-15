@@ -17,10 +17,8 @@ import (
 )
 
 type setupDefaults struct {
-	Profile   string
-	URL       string
-	Token     string
-	TokenType string
+	Profile string
+	URL     string
 }
 
 func runSetup(rt *runtime, args []string, defaults setupDefaults) int {
@@ -28,12 +26,15 @@ func runSetup(rt *runtime, args []string, defaults setupDefaults) int {
 	fs.SetOutput(io.Discard)
 
 	profileDefault := firstNonEmpty(defaults.Profile, "default")
-	tokenTypeDefault := firstNonEmpty(defaults.TokenType, "pat")
 
 	var profile string
 	var url string
-	var token string
-	var tokenType string
+	var authMode string
+	var defaultAuth string
+	var patToken string
+	var orgKey string
+	var legacyToken string
+	var legacyTokenType string
 	var tokenStore string
 	var nonInteractive bool
 	var noValidate bool
@@ -42,8 +43,11 @@ func runSetup(rt *runtime, args []string, defaults setupDefaults) int {
 
 	fs.StringVar(&profile, "profile", profileDefault, "Profile name")
 	fs.StringVar(&url, "url", defaults.URL, "Omni instance URL")
-	fs.StringVar(&token, "token", defaults.Token, "PAT or org API key")
-	fs.StringVar(&tokenType, "token-type", tokenTypeDefault, "pat or org")
+	fs.StringVar(&authMode, "auth-mode", "", "Auth setup: pat, org, or both")
+	fs.StringVar(&defaultAuth, "default-auth", "", "Default auth for general commands: pat or org")
+	fs.StringVar(&orgKey, "org-key", "", "Org API key to save")
+	fs.StringVar(&legacyToken, "token", "", "Legacy single token input")
+	fs.StringVar(&legacyTokenType, "token-type", "", "Legacy token type: pat or org")
 	fs.StringVar(&tokenStore, "token-store", "auto", "auto, keychain, or config")
 	fs.BoolVar(&nonInteractive, "non-interactive", false, "Disable prompts; require all values via flags/env")
 	fs.BoolVar(&noValidate, "no-validate", false, "Skip API validation step")
@@ -57,6 +61,8 @@ func runSetup(rt *runtime, args []string, defaults setupDefaults) int {
 		}
 		return usageFail(rt, err.Error())
 	}
+
+	authMode, defaultAuth, patToken, orgKey = applyLegacySetupFlags(authMode, defaultAuth, patToken, orgKey, legacyToken, legacyTokenType)
 
 	if rt.NoInput {
 		nonInteractive = true
@@ -77,26 +83,37 @@ func runSetup(rt *runtime, args []string, defaults setupDefaults) int {
 		if err != nil {
 			return fail(rt, 1, codeUsageError, "setup prompt failed", map[string]any{"error": err.Error()})
 		}
-		tokenType, err = promptInput(reader, "Token type (pat|org)", tokenType)
+		authMode, err = promptInput(reader, "Auth setup (pat|org|both)", firstNonEmpty(authMode, "pat"))
 		if err != nil {
 			return fail(rt, 1, codeUsageError, "setup prompt failed", map[string]any{"error": err.Error()})
+		}
+		authMode = normalizeSetupAuthMode(authMode)
+		if authMode == "both" {
+			defaultAuth, err = promptInput(reader, "Default auth for general commands (pat|org)", firstNonEmpty(defaultAuth, "pat"))
+			if err != nil {
+				return fail(rt, 1, codeUsageError, "setup prompt failed", map[string]any{"error": err.Error()})
+			}
 		}
 		tokenStore, err = promptInput(reader, "Token store (auto|keychain|config)", tokenStore)
 		if err != nil {
 			return fail(rt, 1, codeUsageError, "setup prompt failed", map[string]any{"error": err.Error()})
 		}
-		if strings.TrimSpace(token) == "" {
-			token, err = promptSecretInput(reader, "Token")
-			if err != nil {
-				return fail(rt, 1, codeUsageError, "setup prompt failed", map[string]any{"error": err.Error()})
+		if authMode == "org" || authMode == "both" {
+			if strings.TrimSpace(orgKey) == "" {
+				orgKey, err = promptSecretInput(reader, "Org API key")
+				if err != nil {
+					return fail(rt, 1, codeUsageError, "setup prompt failed", map[string]any{"error": err.Error()})
+				}
 			}
 		}
 	}
 
 	profile = strings.TrimSpace(profile)
 	url = strings.TrimSpace(url)
-	token = strings.TrimSpace(token)
-	tokenType = normalizeSetupTokenType(tokenType)
+	authMode = normalizeSetupAuthMode(authMode)
+	defaultAuth = normalizeSetupAuthKind(defaultAuth)
+	patToken = strings.TrimSpace(patToken)
+	orgKey = strings.TrimSpace(orgKey)
 	tokenStore = normalizeTokenStoreSetting(tokenStore)
 
 	if profile == "" {
@@ -105,40 +122,64 @@ func runSetup(rt *runtime, args []string, defaults setupDefaults) int {
 	if url == "" {
 		return usageFail(rt, "missing Omni URL; set --url")
 	}
-	if token == "" {
-		return usageFail(rt, "missing token; set --token")
-	}
-	if tokenType == "" {
-		return usageFail(rt, fmt.Sprintf("invalid token type %q; use pat or org", tokenType))
+	if authMode == "" {
+		return usageFail(rt, "missing auth setup; set --auth-mode to pat, org, or both")
 	}
 	if tokenStore == "" {
 		return usageFail(rt, fmt.Sprintf("invalid token store %q; use auto, keychain, or config", tokenStore))
 	}
+	switch authMode {
+	case "pat":
+		defaultAuth = "pat"
+	case "org":
+		defaultAuth = "org"
+		if orgKey == "" {
+			return usageFail(rt, "missing org API key; set --org-key")
+		}
+	case "both":
+		if orgKey == "" {
+			return usageFail(rt, "missing org API key; set --org-key")
+		}
+		if defaultAuth == "" {
+			return usageFail(rt, "missing default auth; set --default-auth to pat or org")
+		}
+	default:
+		return usageFail(rt, fmt.Sprintf("invalid auth setup %q; use pat, org, or both", authMode))
+	}
 
-	validated := false
-	var summary validationSummary
-	if !noValidate {
-		api, err := client.New(url, token)
-		if err != nil {
-			return fail(rt, 1, codeConfigError, "failed to create API client", map[string]any{"error": err.Error()})
-		}
-		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSec)*time.Second)
-		defer cancel()
-
-		summary, vErr := collectValidation(ctx, api, tokenType, tokenType == "org")
-		if vErr != nil {
-			return fail(rt, 1, vErr.Code, vErr.Message, vErr.Details)
-		}
-		validated = summary.Base.Status != "fail"
-		if summary.Query.Status == "fail" {
-			output.Errorf("warning: query capability validation failed (%s)", summary.Query.Message)
-		}
-		if summary.Admin.Status == "fail" {
-			output.Errorf("warning: admin capability validation failed (%s)", summary.Admin.Message)
+	if authMode == "pat" || authMode == "both" {
+		if strings.TrimSpace(patToken) == "" {
+			token, err := obtainPAT(rt, url)
+			if err != nil {
+				return fail(rt, 1, codeAuthError, "PAT browser login failed", map[string]any{"error": err.Error(), "base_url": url})
+			}
+			patToken = token
 		}
 	}
 
-	profileCfg, warning, err := saveProfileWithToken(rt, profile, url, tokenType, token, tokenStore, setCurrent)
+	validated := false
+	validationResults := map[string]validationSummary{}
+	if !noValidate {
+		if patToken != "" {
+			summary, vErr := validateSetupCredential(url, patToken, "pat", timeoutSec)
+			if vErr != nil {
+				return fail(rt, 1, vErr.Code, vErr.Message, vErr.Details)
+			}
+			validationResults["pat"] = summary
+			validated = validated || summary.Base.Status != "fail"
+		}
+		if orgKey != "" {
+			summary, vErr := validateSetupCredential(url, orgKey, "org", timeoutSec)
+			if vErr != nil {
+				return fail(rt, 1, vErr.Code, vErr.Message, vErr.Details)
+			}
+			validationResults["org"] = summary
+			validated = validated || summary.Base.Status != "fail"
+		}
+		emitSetupValidationMessages(authMode, validationResults)
+	}
+
+	profileCfg, warning, err := saveProfileWithCredentials(rt, profile, url, defaultAuth, patToken, orgKey, tokenStore, setCurrent)
 	if err != nil {
 		return fail(rt, 1, codeConfigError, "failed to save profile", map[string]any{"error": err.Error()})
 	}
@@ -147,16 +188,26 @@ func runSetup(rt *runtime, args []string, defaults setupDefaults) int {
 	}
 
 	result := map[string]any{
-		"ok":          true,
-		"profile":     profile,
-		"base_url":    url,
-		"token_type":  tokenType,
-		"token_store": profileCfg.TokenStore,
-		"set_current": setCurrent,
-		"validated":   validated,
+		"ok":               true,
+		"profile":          profile,
+		"base_url":         url,
+		"auth_mode":        profileCfg.AuthMode(),
+		"default_auth":     profileCfg.DefaultAuth,
+		"configured_auths": profileCfg.ConfiguredAuths(),
+		"set_current":      setCurrent,
+		"validated":        validated,
+	}
+	if note := setupValidationNote(authMode, validationResults); note != "" {
+		result["note"] = note
+	}
+	if patToken != "" {
+		result["pat_token_store"] = profileCfg.PATStore
+	}
+	if orgKey != "" {
+		result["org_key_store"] = profileCfg.OrgKeyStore
 	}
 	if !noValidate {
-		result["validation"] = summary
+		result["validation"] = validationResults
 	}
 
 	if err := output.Print(result, rt.JSON, rt.Plain); err != nil {
@@ -165,12 +216,88 @@ func runSetup(rt *runtime, args []string, defaults setupDefaults) int {
 	return 0
 }
 
+func validateSetupCredential(url, token, authKind string, timeoutSec int) (validationSummary, *validationFailure) {
+	api, err := client.New(url, token)
+	if err != nil {
+		return validationSummary{}, &validationFailure{Code: codeConfigError, Message: "failed to create API client", Details: map[string]any{"error": err.Error()}}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSec)*time.Second)
+	defer cancel()
+	return collectValidation(ctx, api, authKind, authKind == "org")
+}
+
+func emitSetupValidationMessages(authMode string, validationResults map[string]validationSummary) {
+	patSummary, hasPAT := validationResults["pat"]
+	orgSummary, hasOrg := validationResults["org"]
+
+	if hasPAT && patSummary.Query.Status == "fail" {
+		if authMode == "both" && hasOrg && orgSummary.Query.Status == "pass" && orgSummary.Admin.Status == "pass" {
+			output.Errorf("note: PAT authenticated but has limited permissions on this instance (%s). Org key validation passed and setup succeeded.", patSummary.Query.Message)
+		} else {
+			output.Errorf("warning: PAT query capability validation failed (%s)", patSummary.Query.Message)
+		}
+	}
+	if hasOrg && orgSummary.Query.Status == "fail" {
+		output.Errorf("warning: org-key query capability validation failed (%s)", orgSummary.Query.Message)
+	}
+	if hasOrg && orgSummary.Admin.Status == "fail" {
+		output.Errorf("warning: org-key admin capability validation failed (%s)", orgSummary.Admin.Message)
+	}
+}
+
+func setupValidationNote(authMode string, validationResults map[string]validationSummary) string {
+	if authMode != "both" {
+		return ""
+	}
+	patSummary, hasPAT := validationResults["pat"]
+	orgSummary, hasOrg := validationResults["org"]
+	if !hasPAT || !hasOrg {
+		return ""
+	}
+	if patSummary.Query.Status == "fail" && orgSummary.Query.Status == "pass" && orgSummary.Admin.Status == "pass" {
+		return "PAT login worked, but this PAT has limited permissions on this instance. The org key passed full validation, so setup succeeded."
+	}
+	return ""
+}
+
+func applyLegacySetupFlags(authMode, defaultAuth, patToken, orgKey, token, tokenType string) (string, string, string, string) {
+	token = strings.TrimSpace(token)
+	tokenType = normalizeSetupAuthKind(tokenType)
+	if token == "" || tokenType == "" {
+		return authMode, defaultAuth, patToken, orgKey
+	}
+	switch tokenType {
+	case "org":
+		if strings.TrimSpace(orgKey) == "" {
+			orgKey = token
+		}
+		if strings.TrimSpace(authMode) == "" {
+			authMode = "org"
+		}
+		if strings.TrimSpace(defaultAuth) == "" {
+			defaultAuth = "org"
+		}
+	default:
+		if strings.TrimSpace(patToken) == "" {
+			patToken = token
+		}
+		if strings.TrimSpace(authMode) == "" {
+			authMode = "pat"
+		}
+		if strings.TrimSpace(defaultAuth) == "" {
+			defaultAuth = "pat"
+		}
+	}
+	return authMode, defaultAuth, patToken, orgKey
+}
+
 func printSetupUsage() {
 	fmt.Print(`omni setup:
-  omni setup [--profile <name>] [--url <url>] [--token <token>] [--token-type pat|org]
+  omni setup [--profile <name>] [--url <url>] [--auth-mode <pat|org|both>]
+             [--default-auth <pat|org>] [--org-key <key>]
              [--token-store auto|keychain|config] [--timeout-seconds 20]
-  omni setup --non-interactive --profile <name> --url <url> --token <token> --token-type pat|org
-  omni --no-input setup --profile <name> --url <url> --token <token> --token-type pat|org
+  omni setup --non-interactive --profile <name> --url <url> --auth-mode both --org-key <key> --default-auth pat
+  omni --no-input setup --profile <name> --url <url> --auth-mode org --org-key <key>
 `)
 }
 
@@ -208,10 +335,22 @@ func promptSecretInput(reader *bufio.Reader, label string) (string, error) {
 	return strings.TrimSpace(text), nil
 }
 
-func normalizeSetupTokenType(v string) string {
-	s := strings.ToLower(strings.TrimSpace(v))
-	switch s {
-	case "", "pat":
+func normalizeSetupAuthMode(v string) string {
+	switch strings.ToLower(strings.TrimSpace(v)) {
+	case "pat":
+		return "pat"
+	case "org":
+		return "org"
+	case "both":
+		return "both"
+	default:
+		return ""
+	}
+}
+
+func normalizeSetupAuthKind(v string) string {
+	switch strings.ToLower(strings.TrimSpace(v)) {
+	case "pat":
 		return "pat"
 	case "org":
 		return "org"

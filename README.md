@@ -13,7 +13,7 @@ Agent usage mapping is documented in `docs/agent-command-map.md`.
 ## Features in this scaffold
 
 - Profile-based auth in `~/.omni/config.json`
-- Supports both PAT and org API key tokens
+- Supports PAT auth, org API keys, or both in one profile
 - Token storage backends: `keychain` (macOS) or `config` fallback
 - Config precedence: flag > env > config file
 - `omni setup` wizard (interactive + non-interactive)
@@ -56,7 +56,8 @@ Agent usage mapping is documented in `docs/agent-command-map.md`.
 - `--profile`
 - `--url`
 - `--token`
-- `--token-type pat|org`
+- `--auth pat|org`
+- `--token-type pat|org` (legacy override)
 - `--config`
 - `--json`
 - `--plain`
@@ -67,6 +68,9 @@ Agent usage mapping is documented in `docs/agent-command-map.md`.
 
 - `OMNI_PROFILE`
 - `OMNI_URL`
+- `OMNI_AUTH`
+- `OMNI_ORG_KEY`
+- `OMNI_PAT` (manual override; PAT is normally acquired by browser login)
 - `OMNI_TOKEN`
 - `OMNI_TOKEN_TYPE`
 - `OMNI_CONFIG`
@@ -109,9 +113,12 @@ omni completion fish > ~/.config/fish/completions/omni.fish
 
 ```bash
 omni setup
-omni setup --non-interactive --profile prod --url https://acme.omniapp.co --token "$OMNI_PAT" --token-type pat --token-store auto
-omni --no-input setup --profile prod --url https://acme.omniapp.co --token "$OMNI_PAT" --token-type pat
-omni auth add --name prod --url https://acme.omniapp.co --token "$OMNI_PAT" --token-type pat --token-store keychain
+omni setup --profile prod --url https://acme.omniapp.co --auth-mode pat --token-store auto
+omni setup --non-interactive --profile prod --url https://acme.omniapp.co --auth-mode org --org-key "$OMNI_ORG_KEY" --token-store auto
+omni setup --profile prod --url https://acme.omniapp.co --auth-mode both --org-key "$OMNI_ORG_KEY" --default-auth pat
+omni --no-input setup --profile prod --url https://acme.omniapp.co --auth-mode org --org-key "$OMNI_ORG_KEY"
+omni auth add --name prod --url https://acme.omniapp.co --auth-mode both --org-key "$OMNI_ORG_KEY" --default-auth pat --token-store keychain
+omni --auth org documents list --page-size 20
 omni schema
 omni schema documents permissions
 omni exit-codes --json
@@ -159,6 +166,20 @@ omni auth whoami
 omni query run --file query.json --result-type json --wait
 omni jobs status 12345
 ```
+
+## Auth model
+
+- `omni setup` asks what auth to configure: `pat`, `org`, or `both`
+- PAT setup uses browser login rather than asking the user to paste a token
+- Profiles can store both a PAT and an org key at the same time
+- General commands use the profile's `default_auth`
+- Org-only commands such as `admin`, `users`, and `scim` automatically use the org key
+- `--auth pat|org` forces a specific credential for the current command
+- `OMNI_PAT`, `--token`, and `--token-type` are still accepted as manual/legacy overrides
+
+See also:
+
+- `docs/pat-auth-flow.md`
 
 ## Command overview
 

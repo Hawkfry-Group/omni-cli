@@ -112,7 +112,7 @@ func zshCompletion() string {
 _omni() {
   local -a commands
   commands=(
-    'setup:Configure Omni URL + token profile'
+    'setup:Configure Omni URL and auth profile'
     'schema:Print machine-readable command schema'
     'exit-codes:Print stable automation exit codes'
     'doctor:Run connectivity and capability checks'

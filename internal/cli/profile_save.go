@@ -9,42 +9,86 @@ import (
 	"github.com/omni-co/omni-cli/internal/secret"
 )
 
-func saveProfileWithToken(rt *runtime, profileName, baseURL, tokenType, token, tokenStorePref string, setCurrent bool) (config.Profile, string, error) {
+func saveProfileWithCredentials(rt *runtime, profileName, baseURL, defaultAuth, patToken, orgKey, tokenStorePref string, setCurrent bool) (config.Profile, string, error) {
 	store, err := secret.Pick(tokenStorePref, rt.Keychain)
 	if err != nil {
 		return config.Profile{}, "", err
 	}
 
 	newProfile := config.Profile{
-		BaseURL:   strings.TrimSpace(baseURL),
-		TokenType: strings.TrimSpace(tokenType),
+		BaseURL:     strings.TrimSpace(baseURL),
+		DefaultAuth: strings.TrimSpace(defaultAuth),
 	}
-	warning := ""
-	if store.Name() == "keychain" {
-		ref, saveErr := store.Save(profileName, token)
-		if saveErr != nil {
-			return config.Profile{}, "", fmt.Errorf("save token in keychain: %w", saveErr)
+	if token := strings.TrimSpace(patToken); token != "" {
+		if err := applyCredential(store, tokenStorePref, profileName, "pat", token, &newProfile); err != nil {
+			return config.Profile{}, "", err
 		}
-		newProfile.TokenStore = "keychain"
-		newProfile.TokenRef = ref
-		newProfile.Token = ""
-	} else {
-		newProfile.TokenStore = "config"
-		newProfile.Token = token
-		if tokenStorePref == "auto" && rt.Keychain != nil && !rt.Keychain.Available() {
-			warning = "keychain unavailable; token stored in config file"
+	}
+	if token := strings.TrimSpace(orgKey); token != "" {
+		if err := applyCredential(store, tokenStorePref, profileName, "org", token, &newProfile); err != nil {
+			return config.Profile{}, "", err
 		}
 	}
 
 	prev := rt.Config.Profiles[profileName]
-	if prev.TokenStore == "keychain" && prev.TokenRef != "" && newProfile.TokenStore != "keychain" && rt.Keychain != nil {
-		_ = rt.Keychain.Delete(prev.TokenRef)
-	}
+	deleteRemovedCredentialRef(rt.Keychain, prev.PATStore, prev.PATRef, newProfile.PATStore, newProfile.PATRef)
+	deleteRemovedCredentialRef(rt.Keychain, prev.OrgKeyStore, prev.OrgKeyRef, newProfile.OrgKeyStore, newProfile.OrgKeyRef)
 
 	auth.SaveProfile(rt.Config, profileName, newProfile, setCurrent)
 	if err := config.Save(rt.ConfigPath, rt.Config); err != nil {
 		return config.Profile{}, "", err
 	}
 
+	warning := ""
+	if tokenStorePref == "auto" && rt.Keychain != nil && !rt.Keychain.Available() {
+		warning = "keychain unavailable; tokens stored in config file"
+	}
 	return rt.Config.Profiles[profileName], warning, nil
+}
+
+func applyCredential(store secret.Store, tokenStorePref, profileName, authKind, token string, profile *config.Profile) error {
+	if store.Name() == "keychain" {
+		refName := credentialRefName(profileName, authKind)
+		ref, err := store.Save(refName, token)
+		if err != nil {
+			return fmt.Errorf("save %s credential in keychain: %w", authKind, err)
+		}
+		switch authKind {
+		case "org":
+			profile.OrgKeyStore = "keychain"
+			profile.OrgKeyRef = ref
+			profile.OrgKey = ""
+		default:
+			profile.PATStore = "keychain"
+			profile.PATRef = ref
+			profile.PATToken = ""
+		}
+		return nil
+	}
+
+	switch authKind {
+	case "org":
+		profile.OrgKeyStore = "config"
+		profile.OrgKey = token
+		profile.OrgKeyRef = ""
+	default:
+		profile.PATStore = "config"
+		profile.PATToken = token
+		profile.PATRef = ""
+	}
+	return nil
+}
+
+func credentialRefName(profileName, authKind string) string {
+	return strings.TrimSpace(profileName) + ":" + strings.TrimSpace(authKind)
+}
+
+func deleteRemovedCredentialRef(store secret.Store, previousStore, previousRef, newStore, newRef string) {
+	if store == nil || previousStore != "keychain" || strings.TrimSpace(previousRef) == "" {
+		return
+	}
+	if newStore == "keychain" && strings.TrimSpace(newRef) == strings.TrimSpace(previousRef) {
+		return
+	}
+	_ = store.Delete(previousRef)
 }

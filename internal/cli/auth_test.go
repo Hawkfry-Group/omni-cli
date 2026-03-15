@@ -29,16 +29,14 @@ func TestRunAuthRemoveDeletesProfileAndKeychainRef(t *testing.T) {
 			CurrentProfile: "p1",
 			Profiles: map[string]config.Profile{
 				"p1": {
-					BaseURL:    "https://a.omniapp.co",
-					TokenType:  "pat",
-					TokenStore: "keychain",
-					TokenRef:   "ref-p1",
+					BaseURL:  "https://a.omniapp.co",
+					PATStore: "keychain",
+					PATRef:   "ref-p1",
 				},
 				"p2": {
-					BaseURL:    "https://b.omniapp.co",
-					TokenType:  "pat",
-					TokenStore: "config",
-					Token:      "abc",
+					BaseURL:  "https://b.omniapp.co",
+					PATStore: "config",
+					PATToken: "abc",
 				},
 			},
 		},

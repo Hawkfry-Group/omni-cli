@@ -117,7 +117,7 @@ func commandSchemaRoot() *schemaCommand {
 			schemaCmd("zsh", "Generate zsh completion script", ""),
 			schemaCmd("fish", "Generate fish completion script", ""),
 		),
-		schemaCmd("setup", "Configure Omni URL + token profile", "omni setup"),
+		schemaCmd("setup", "Configure Omni URL and auth profile", "omni setup"),
 		schemaCmd("auth", "Manage profiles and tokens", "omni auth <subcommand>",
 			schemaCmd("add", "Add auth profile", ""),
 			schemaCmd("list", "List auth profiles", ""),
@@ -384,6 +384,7 @@ func commandSchemaRoot() *schemaCommand {
 	root.Flags = []schemaFlag{
 		{Name: "--profile", Type: "string", Description: "Profile name to use"},
 		{Name: "--url", Type: "string", Description: "Omni instance URL"},
+		{Name: "--auth", Type: "string", Description: "Auth to use: pat or org"},
 		{Name: "--token", Type: "string", Description: "Omni API token (PAT or org key)"},
 		{Name: "--token-type", Type: "string", Description: "Token type: pat or org"},
 		{Name: "--config", Type: "string", Description: "Config file path"},
