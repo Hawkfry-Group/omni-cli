@@ -18,7 +18,7 @@ import (
 func TestRunConnectionsCreateWithFile(t *testing.T) {
 	tmp := t.TempDir()
 	bodyPath := filepath.Join(tmp, "connection.json")
-	if err := os.WriteFile(bodyPath, []byte(`{"dialect":"postgres","name":"Coverage Postgres","passwordUnencrypted":"secret"}`), 0o600); err != nil {
+	if err := os.WriteFile(bodyPath, []byte(`{"dialect":"postgres","name":"Coverage Postgres","passwordUnencrypted":"example-test-password-not-a-secret"}`), 0o600); err != nil {
 		t.Fatalf("write connection body: %v", err)
 	}
 
@@ -96,7 +96,7 @@ func TestRunConnectionsCreateInteractivePostgresWizard(t *testing.T) {
 	reader := bufio.NewReader(strings.NewReader(strings.Join([]string{
 		"",
 		"Coverage Postgres",
-		"db.example.internal",
+		"db.example.invalid",
 		"",
 		"analytics",
 		"omni",
@@ -111,7 +111,7 @@ func TestRunConnectionsCreateInteractivePostgresWizard(t *testing.T) {
 
 	stdout, stderr, exit := captureRuntimeIO(t, func() int {
 		return runConnectionsCreateWithPrompts(rt, nil, true, reader, func(_ *bufio.Reader, _ string) (string, error) {
-			return "top-secret", nil
+			return "example-test-password-not-a-secret", nil
 		})
 	})
 	if exit != 0 {
@@ -129,7 +129,7 @@ func TestRunConnectionsCreateInteractivePostgresWizard(t *testing.T) {
 	if gotBody.Name != "Coverage Postgres" {
 		t.Fatalf("expected name to be preserved, got %q", gotBody.Name)
 	}
-	if gotBody.Host == nil || *gotBody.Host != "db.example.internal" {
+	if gotBody.Host == nil || *gotBody.Host != "db.example.invalid" {
 		t.Fatalf("expected host to be set, got %#v", gotBody.Host)
 	}
 	if gotBody.Port == nil || *gotBody.Port != 5432 {
@@ -141,7 +141,7 @@ func TestRunConnectionsCreateInteractivePostgresWizard(t *testing.T) {
 	if gotBody.Username == nil || *gotBody.Username != "omni" {
 		t.Fatalf("expected username to be set, got %#v", gotBody.Username)
 	}
-	if gotBody.PasswordUnencrypted != "top-secret" {
+	if gotBody.PasswordUnencrypted != "example-test-password-not-a-secret" {
 		t.Fatalf("expected password to be forwarded, got %q", gotBody.PasswordUnencrypted)
 	}
 	if gotBody.BaseRole == nil || *gotBody.BaseRole != gen.QUERIER {
@@ -189,7 +189,7 @@ func TestPromptConnectionCreatePayloadValidation(t *testing.T) {
 			input: strings.Join([]string{
 				"postgres",
 				"Coverage Postgres",
-				"db.example.internal",
+				"db.example.invalid",
 				"zero",
 			}, "\n") + "\n",
 			want: "port must be a positive integer",
@@ -199,13 +199,13 @@ func TestPromptConnectionCreatePayloadValidation(t *testing.T) {
 			input: strings.Join([]string{
 				"postgres",
 				"Coverage Postgres",
-				"db.example.internal",
+				"db.example.invalid",
 				"5432",
 				"analytics",
 				"omni",
 				"not-a-role",
 			}, "\n") + "\n",
-			secret: "top-secret",
+			secret: "example-test-password-not-a-secret",
 			want:   `invalid base role "not-a-role"`,
 		},
 	}
@@ -228,7 +228,7 @@ func TestPromptConnectionCreatePayloadValidation(t *testing.T) {
 func TestPromptConnectionCreatePayloadBigQueryUsesServiceAccountDefaults(t *testing.T) {
 	tmp := t.TempDir()
 	serviceAccountPath := filepath.Join(tmp, "service-account.json")
-	serviceAccount := `{"project_id":"coverage-project","client_email":"svc@coverage-project.iam.gserviceaccount.com"}`
+	serviceAccount := `{"project_id":"example-project-not-real","client_email":"svc@example-project-not-real.iam.gserviceaccount.invalid"}`
 	if err := os.WriteFile(serviceAccountPath, []byte(serviceAccount), 0o600); err != nil {
 		t.Fatalf("write service account file: %v", err)
 	}
@@ -266,10 +266,10 @@ func TestPromptConnectionCreatePayloadBigQueryUsesServiceAccountDefaults(t *test
 	if got["dialect"] != "bigquery" {
 		t.Fatalf("expected bigquery dialect, got %#v", got["dialect"])
 	}
-	if got["database"] != "coverage-project" {
+	if got["database"] != "example-project-not-real" {
 		t.Fatalf("expected project ID default, got %#v", got["database"])
 	}
-	if got["username"] != "svc@coverage-project.iam.gserviceaccount.com" {
+	if got["username"] != "svc@example-project-not-real.iam.gserviceaccount.invalid" {
 		t.Fatalf("expected client email default, got %#v", got["username"])
 	}
 	if got["region"] != "us" {
