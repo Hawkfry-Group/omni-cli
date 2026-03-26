@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -527,29 +528,49 @@ func (c *Client) GetModelYAML(ctx context.Context, modelID uuid.UUID, branchID *
 }
 
 func (c *Client) DeleteModelYAML(ctx context.Context, modelID uuid.UUID, fileName string, branchID *uuid.UUID, mode string, commitMessage string) (*gen.ModelsYamlDeleteResp, error) {
-	payload := map[string]any{
-		"fileName": fileName,
+	apiClient, ok := c.api.ClientInterface.(*gen.Client)
+	if !ok {
+		return nil, fmt.Errorf("models yaml delete: unexpected client implementation %T", c.api.ClientInterface)
 	}
-	encoded, err := json.Marshal(payload)
+
+	serverURL, err := url.Parse(apiClient.Server)
 	if err != nil {
 		return nil, err
 	}
-	var params gen.ModelsYamlDeleteParams
-	if err := json.Unmarshal(encoded, &params); err != nil {
+
+	queryURL, err := serverURL.Parse("." + fmt.Sprintf("/api/v1/models/%s/yaml", modelID))
+	if err != nil {
 		return nil, err
 	}
+
+	query := queryURL.Query()
+	query.Set("fileName", fileName)
 	if branchID != nil {
-		params.BranchId = branchID
+		query.Set("branchId", branchID.String())
 	}
 	if strings.TrimSpace(mode) != "" {
-		m := gen.ModelsYamlDeleteParamsMode(strings.TrimSpace(mode))
-		params.Mode = &m
+		query.Set("mode", strings.TrimSpace(mode))
 	}
 	if strings.TrimSpace(commitMessage) != "" {
-		msg := strings.TrimSpace(commitMessage)
-		params.CommitMessage = &msg
+		query.Set("commitMessage", strings.TrimSpace(commitMessage))
 	}
-	return c.api.ModelsYamlDeleteWithResponse(ctx, modelID, &params)
+	queryURL.RawQuery = query.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	for _, edit := range apiClient.RequestEditors {
+		if err := edit(ctx, req); err != nil {
+			return nil, err
+		}
+	}
+
+	resp, err := apiClient.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	return gen.ParseModelsYamlDeleteResp(resp)
 }
 
 func (c *Client) ListSCIMUsers(ctx context.Context, count int, startIndex int, filter string) (*gen.ScimUsersListResp, error) {
