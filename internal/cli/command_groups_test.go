@@ -65,6 +65,20 @@ func TestRunAdminUsersAndGroupsList(t *testing.T) {
 	if exit != 1 || !strings.Contains(stderr, "admin commands require an org API key") {
 		t.Fatalf("expected org-key guard, got exit=%d stderr=%q", exit, stderr)
 	}
+
+	stdout, stderr, exit = captureRuntimeIO(t, func() int {
+		return runAdmin(orgRT, nil)
+	})
+	if exit != 0 || !strings.Contains(stdout, "omni admin commands:") || strings.TrimSpace(stderr) != "" {
+		t.Fatalf("admin usage failed: exit=%d stdout=%q stderr=%q", exit, stdout, stderr)
+	}
+
+	_, stderr, exit = captureRuntimeIO(t, func() int {
+		return runAdmin(orgRT, []string{"users", "delete"})
+	})
+	if exit != 2 || !strings.Contains(stderr, "unknown admin users action") {
+		t.Fatalf("admin unknown action failed: exit=%d stderr=%q", exit, stderr)
+	}
 }
 
 func TestRunAgenticCommands(t *testing.T) {
@@ -122,6 +136,20 @@ func TestRunAgenticCommands(t *testing.T) {
 
 	if !sawSubmit || !sawStatus || !sawCancel || !sawResult {
 		t.Fatalf("expected all agentic endpoints, got submit=%v status=%v cancel=%v result=%v", sawSubmit, sawStatus, sawCancel, sawResult)
+	}
+
+	stdout, stderr, exit = captureRuntimeIO(t, func() int {
+		return runAgentic(rt, nil)
+	})
+	if exit != 0 || !strings.Contains(stdout, "omni agentic commands:") || strings.TrimSpace(stderr) != "" {
+		t.Fatalf("agentic usage failed: exit=%d stdout=%q stderr=%q", exit, stdout, stderr)
+	}
+
+	_, stderr, exit = captureRuntimeIO(t, func() int {
+		return runAgentic(rt, []string{"nope"})
+	})
+	if exit != 2 || !strings.Contains(stderr, "unknown agentic subcommand") {
+		t.Fatalf("agentic unknown subcommand failed: exit=%d stderr=%q", exit, stderr)
 	}
 }
 
@@ -205,6 +233,10 @@ func TestRunDashboardsAndEmbedCommands(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/dashboards/"+dashboardID+"/download":
+			body := mustReadAll(t, r)
+			if !strings.Contains(body, `"format":"pdf"`) {
+				t.Fatalf("unexpected download body %q", body)
+			}
 			if r.URL.Query().Get("userId") != "member-1" {
 				t.Fatalf("unexpected download query %q", r.URL.RawQuery)
 			}
@@ -225,6 +257,10 @@ func TestRunDashboardsAndEmbedCommands(t *testing.T) {
 			}
 			_, _ = w.Write([]byte(`{"filters":[]}`))
 		case r.Method == http.MethodPatch && r.URL.Path == "/api/v1/dashboards/"+dashboardID+"/filters":
+			body := mustReadAll(t, r)
+			if !strings.Contains(body, `"filters":[]`) {
+				t.Fatalf("unexpected filters update body %q", body)
+			}
 			if r.URL.Query().Get("userId") != "member-1" {
 				t.Fatalf("unexpected filters update query %q", r.URL.RawQuery)
 			}
@@ -243,6 +279,20 @@ func TestRunDashboardsAndEmbedCommands(t *testing.T) {
 
 	rt := testRuntime(server.URL, "org-token", "org")
 
+	stdout, stderr, exit := captureRuntimeIO(t, func() int {
+		return runDashboards(rt, nil)
+	})
+	if exit != 0 || !strings.Contains(stdout, "omni dashboards commands:") || strings.TrimSpace(stderr) != "" {
+		t.Fatalf("dashboards usage failed: exit=%d stdout=%q stderr=%q", exit, stdout, stderr)
+	}
+
+	_, stderr, exit = captureRuntimeIO(t, func() int {
+		return runDashboards(rt, []string{"nope"})
+	})
+	if exit != 2 || !strings.Contains(stderr, "unknown dashboards subcommand") {
+		t.Fatalf("dashboards unknown subcommand failed: exit=%d stderr=%q", exit, stderr)
+	}
+
 	for _, args := range [][]string{
 		{"download", "--file", downloadPath, "--user-id", "member-1", dashboardID},
 		{"download-status", "--user-id", "member-1", dashboardID, jobID},
@@ -258,7 +308,7 @@ func TestRunDashboardsAndEmbedCommands(t *testing.T) {
 		}
 	}
 
-	stdout, stderr, exit := captureRuntimeIO(t, func() int {
+	stdout, stderr, exit = captureRuntimeIO(t, func() int {
 		return runEmbed(rt, []string{"sso", "generate-session", "--file", embedPath})
 	})
 	if exit != 0 || !strings.Contains(stdout, `embed.example.com/session`) || strings.TrimSpace(stderr) != "" {

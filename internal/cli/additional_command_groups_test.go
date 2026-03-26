@@ -18,6 +18,10 @@ func TestRunDocumentsCommands(t *testing.T) {
 	movePath := writeTempJSON(t, tmp, "documents-move.json", `{"folderPath":"finance/coverage","scope":"organization"}`)
 	draftPath := writeTempJSON(t, tmp, "documents-draft.json", `{"replace":"coverage draft"}`)
 	duplicatePath := writeTempJSON(t, tmp, "documents-duplicate.json", `{"name":"Coverage Seed Workbook Copy","scope":"organization"}`)
+	permissionsPath := writeTempJSON(t, tmp, "documents-permissions.json", `{"permits":[{"id":"user-2","type":"user","role":"viewer"}]}`)
+	permissionSettingsPath := writeTempJSON(t, tmp, "documents-permission-settings.json", `{"scope":"organization"}`)
+	labelsBulkPath := writeTempJSON(t, tmp, "documents-labels-bulk.json", `{"labels":["finance","coverage"]}`)
+	transferPath := writeTempJSON(t, tmp, "documents-transfer.json", `{"userId":"22222222-2222-2222-2222-222222222222"}`)
 
 	saw := map[string]bool{}
 
@@ -99,6 +103,67 @@ func TestRunDocumentsCommands(t *testing.T) {
 				t.Fatalf("unexpected documents access query: %q", r.URL.RawQuery)
 			}
 			_, _ = w.Write([]byte(`{"records":[],"pageInfo":{"hasNextPage":false,"nextCursor":null,"pageSize":3,"totalRecords":0}}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/documents/"+documentID+"/permissions":
+			saw["permissions-get"] = true
+			if r.URL.Query().Get("userId") != favoriteUser {
+				t.Fatalf("unexpected documents permissions get query: %q", r.URL.RawQuery)
+			}
+			_, _ = w.Write([]byte(`{"permits":[]}`))
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/documents/"+documentID+"/permissions":
+			saw["permissions-add"] = true
+			if body := mustReadAll(t, r); !strings.Contains(body, `"role":"viewer"`) {
+				t.Fatalf("unexpected documents permissions add body %q", body)
+			}
+			_, _ = w.Write([]byte(`{"added":true}`))
+		case r.Method == http.MethodPatch && r.URL.Path == "/api/v1/documents/"+documentID+"/permissions":
+			saw["permissions-update"] = true
+			if body := mustReadAll(t, r); !strings.Contains(body, `"role":"viewer"`) {
+				t.Fatalf("unexpected documents permissions update body %q", body)
+			}
+			_, _ = w.Write([]byte(`{"updated":true}`))
+		case r.Method == http.MethodDelete && r.URL.Path == "/api/v1/documents/"+documentID+"/permissions":
+			saw["permissions-revoke"] = true
+			if body := mustReadAll(t, r); !strings.Contains(body, `"role":"viewer"`) {
+				t.Fatalf("unexpected documents permissions revoke body %q", body)
+			}
+			_, _ = w.Write([]byte(`{"revoked":true}`))
+		case r.Method == http.MethodPut && r.URL.Path == "/api/v1/documents/"+documentID+"/permissions":
+			saw["permissions-settings"] = true
+			if body := mustReadAll(t, r); !strings.Contains(body, `"scope":"organization"`) {
+				t.Fatalf("unexpected documents permissions settings body %q", body)
+			}
+			_, _ = w.Write([]byte(`{"settingsUpdated":true}`))
+		case r.Method == http.MethodPut && r.URL.Path == "/api/v1/documents/"+documentID+"/labels/finance":
+			saw["label-add"] = true
+			if r.URL.Query().Get("userId") != favoriteUser {
+				t.Fatalf("unexpected documents label add query: %q", r.URL.RawQuery)
+			}
+			_, _ = w.Write([]byte(`{"label":"finance"}`))
+		case r.Method == http.MethodDelete && r.URL.Path == "/api/v1/documents/"+documentID+"/labels/finance":
+			saw["label-remove"] = true
+			if r.URL.Query().Get("userId") != favoriteUser {
+				t.Fatalf("unexpected documents label remove query: %q", r.URL.RawQuery)
+			}
+			_, _ = w.Write([]byte(`{"removed":true}`))
+		case r.Method == http.MethodPatch && r.URL.Path == "/api/v1/documents/"+documentID+"/labels":
+			saw["labels-bulk-update"] = true
+			if r.URL.Query().Get("userId") != favoriteUser {
+				t.Fatalf("unexpected documents labels bulk update query: %q", r.URL.RawQuery)
+			}
+			if body := mustReadAll(t, r); !strings.Contains(body, `"labels":["finance","coverage"]`) {
+				t.Fatalf("unexpected documents labels bulk update body %q", body)
+			}
+			_, _ = w.Write([]byte(`{"labelsUpdated":true}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/documents/"+documentID+"/queries":
+			saw["queries"] = true
+			_, _ = w.Write([]byte(`{"queries":[]}`))
+		case r.Method == http.MethodPut && r.URL.Path == "/api/v1/documents/"+documentID+"/transfer-ownership":
+			saw["transfer-ownership"] = true
+			body := mustReadAll(t, r)
+			if !strings.Contains(body, `"userId":"22222222-2222-2222-2222-222222222222"`) && !strings.Contains(body, `"userId":"11111111-1111-1111-1111-111111111111"`) {
+				t.Fatalf("unexpected documents transfer ownership body %q", body)
+			}
+			_, _ = w.Write([]byte(`{"transferred":true}`))
 		default:
 			t.Fatalf("unexpected %s %s", r.Method, r.URL.Path)
 		}
@@ -138,6 +203,17 @@ func TestRunDocumentsCommands(t *testing.T) {
 		{name: "favorite add", args: []string{"favorite", "add", "--user-id", favoriteUser, documentID}, want: `"favorited": true`},
 		{name: "favorite remove", args: []string{"favorite", "remove", "--user-id", favoriteUser, documentID}, want: `"favorited": false`},
 		{name: "access list", args: []string{"access", "list", "--cursor", "access-next", "--page-size", "3", "--type", "user", "--access-source", "folder", "--sort-field", "updatedAt", "--sort-direction", "desc", documentID}, want: `"records": []`},
+		{name: "permissions get", args: []string{"permissions", "get", "--user-id", favoriteUser, documentID}, want: `"permits": []`},
+		{name: "permissions add", args: []string{"permissions", "add", "--file", permissionsPath, documentID}, want: `"added": true`},
+		{name: "permissions update", args: []string{"permissions", "update", "--file", permissionsPath, documentID}, want: `"updated": true`},
+		{name: "permissions revoke", args: []string{"permissions", "revoke", "--file", permissionsPath, documentID}, want: `"revoked": true`},
+		{name: "permissions settings", args: []string{"permissions", "settings", "--file", permissionSettingsPath, documentID}, want: `"settingsUpdated": true`},
+		{name: "label add", args: []string{"label", "add", "--user-id", favoriteUser, documentID, "finance"}, want: `"label": "finance"`},
+		{name: "label remove", args: []string{"label", "remove", "--user-id", favoriteUser, documentID, "finance"}, want: `"removed": true`},
+		{name: "labels bulk-update", args: []string{"labels", "bulk-update", "--file", labelsBulkPath, "--user-id", favoriteUser, documentID}, want: `"labelsUpdated": true`},
+		{name: "queries", args: []string{"queries", documentID}, want: `"queries": []`},
+		{name: "transfer ownership with user", args: []string{"transfer-ownership", "--user-id", favoriteUser, documentID}, want: `"transferred": true`},
+		{name: "transfer ownership with file", args: []string{"transfer-ownership", "--file", transferPath, documentID}, want: `"transferred": true`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			stdout, stderr, exit := captureRuntimeIO(t, func() int {
@@ -147,7 +223,7 @@ func TestRunDocumentsCommands(t *testing.T) {
 		})
 	}
 
-	for _, key := range []string{"list", "get", "create", "delete", "rename", "move", "draft-create", "draft-discard", "duplicate", "favorite-add", "favorite-remove", "access-list"} {
+	for _, key := range []string{"list", "get", "create", "delete", "rename", "move", "draft-create", "draft-discard", "duplicate", "favorite-add", "favorite-remove", "access-list", "permissions-get", "permissions-add", "permissions-update", "permissions-revoke", "permissions-settings", "label-add", "label-remove", "labels-bulk-update", "queries", "transfer-ownership"} {
 		if !saw[key] {
 			t.Fatalf("expected documents endpoint %q to be exercised", key)
 		}

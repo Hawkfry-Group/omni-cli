@@ -128,6 +128,36 @@ func TestExecuteAPIHelpWithoutConfig(t *testing.T) {
 	}
 }
 
+func TestExecuteUtilityCommandHelpWithoutConfig(t *testing.T) {
+	tmp := t.TempDir()
+	configPath := filepath.Join(tmp, "config.json")
+	t.Setenv("OMNI_CONFIG", configPath)
+
+	for _, tc := range []struct {
+		name string
+		args []string
+		want string
+	}{
+		{name: "doctor", args: []string{"doctor", "--help"}, want: "omni doctor:"},
+		{name: "query", args: []string{"query", "--help"}, want: "omni query commands:"},
+		{name: "embed", args: []string{"embed", "--help"}, want: "omni embed commands:"},
+		{name: "exit-codes", args: []string{"exit-codes", "--help"}, want: "omni exit-codes:"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			stdout, stderr, exit := captureExecute(t, tc.args)
+			if exit != 0 {
+				t.Fatalf("expected exit code 0, got %d (stderr=%q)", exit, stderr)
+			}
+			if !strings.Contains(stdout, tc.want) {
+				t.Fatalf("expected help output %q, got %q", tc.want, stdout)
+			}
+			if strings.TrimSpace(stderr) != "" {
+				t.Fatalf("expected empty stderr, got %q", stderr)
+			}
+		})
+	}
+}
+
 func TestExecuteJSONPlainConflict(t *testing.T) {
 	tmp := t.TempDir()
 	configPath := filepath.Join(tmp, "config.json")
