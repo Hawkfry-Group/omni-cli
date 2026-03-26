@@ -108,6 +108,357 @@ func TestAdminAndLabelWrappers(t *testing.T) {
 	_ = testUUID
 }
 
+func TestSCIMMutationWrappers(t *testing.T) {
+	const (
+		userID  = "550e8400-e29b-41d4-a716-446655440000"
+		groupID = "grp_coverage"
+	)
+
+	id := uuid.MustParse(userID)
+	saw := map[string]bool{}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Header.Get("Authorization") != "Bearer token-123" {
+			t.Fatalf("missing auth header: %q", r.Header.Get("Authorization"))
+		}
+
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/api/scim/v2/Users":
+			saw["users-create"] = true
+			if body := mustReadBody(t, r); !strings.Contains(body, `"userName":"jamie@example.com"`) {
+				t.Fatalf("unexpected scim user create body %q", body)
+			}
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"id":"` + userID + `"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/scim/v2/Users/"+userID:
+			saw["users-get"] = true
+			_, _ = w.Write([]byte(`{"id":"` + userID + `"}`))
+		case r.Method == http.MethodPatch && r.URL.Path == "/api/scim/v2/Users/"+userID:
+			saw["users-update"] = true
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodPut && r.URL.Path == "/api/scim/v2/Users/"+userID:
+			saw["users-replace"] = true
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodDelete && r.URL.Path == "/api/scim/v2/Users/"+userID:
+			saw["users-delete"] = true
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodPost && r.URL.Path == "/api/scim/v2/Groups":
+			saw["groups-create"] = true
+			if body := mustReadBody(t, r); !strings.Contains(body, `"displayName":"Coverage Analysts"`) {
+				t.Fatalf("unexpected scim group create body %q", body)
+			}
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"id":"` + groupID + `"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/scim/v2/Groups/"+groupID:
+			saw["groups-get"] = true
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodPatch && r.URL.Path == "/api/scim/v2/Groups/"+groupID:
+			saw["groups-update"] = true
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodPut && r.URL.Path == "/api/scim/v2/Groups/"+groupID:
+			saw["groups-replace"] = true
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodDelete && r.URL.Path == "/api/scim/v2/Groups/"+groupID:
+			saw["groups-delete"] = true
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodGet && r.URL.Path == "/api/scim/v2/embed/Users":
+			saw["embed-users-list"] = true
+			assertQueryValue(t, r.URL, "count", "4")
+			assertQueryValue(t, r.URL, "startIndex", "2")
+			assertQueryValue(t, r.URL, "filter", `userName co "jamie"`)
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodGet && r.URL.Path == "/api/scim/v2/embed/Users/"+userID:
+			saw["embed-users-get"] = true
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodDelete && r.URL.Path == "/api/scim/v2/embed/Users/"+userID:
+			saw["embed-users-delete"] = true
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			t.Fatalf("unexpected %s %s", r.Method, r.URL.String())
+		}
+	}))
+	defer server.Close()
+
+	cli := mustNewClient(t, server.URL)
+	ctx := context.Background()
+
+	if _, err := cli.CreateSCIMUser(ctx, []byte(`{"userName":"jamie@example.com"}`)); err != nil {
+		t.Fatalf("CreateSCIMUser: %v", err)
+	}
+	if _, err := cli.GetSCIMUser(ctx, id); err != nil {
+		t.Fatalf("GetSCIMUser: %v", err)
+	}
+	if _, err := cli.UpdateSCIMUser(ctx, id, []byte(`{"Operations":[]}`)); err != nil {
+		t.Fatalf("UpdateSCIMUser: %v", err)
+	}
+	if _, err := cli.ReplaceSCIMUser(ctx, id, []byte(`{"userName":"jamie+updated@example.com"}`)); err != nil {
+		t.Fatalf("ReplaceSCIMUser: %v", err)
+	}
+	if _, err := cli.DeleteSCIMUser(ctx, id); err != nil {
+		t.Fatalf("DeleteSCIMUser: %v", err)
+	}
+	if _, err := cli.CreateSCIMGroup(ctx, []byte(`{"displayName":"Coverage Analysts"}`)); err != nil {
+		t.Fatalf("CreateSCIMGroup: %v", err)
+	}
+	if _, err := cli.GetSCIMGroup(ctx, groupID); err != nil {
+		t.Fatalf("GetSCIMGroup: %v", err)
+	}
+	if _, err := cli.UpdateSCIMGroup(ctx, groupID, []byte(`{"Operations":[]}`)); err != nil {
+		t.Fatalf("UpdateSCIMGroup: %v", err)
+	}
+	if _, err := cli.ReplaceSCIMGroup(ctx, groupID, []byte(`{"displayName":"Coverage Operators"}`)); err != nil {
+		t.Fatalf("ReplaceSCIMGroup: %v", err)
+	}
+	if _, err := cli.DeleteSCIMGroup(ctx, groupID); err != nil {
+		t.Fatalf("DeleteSCIMGroup: %v", err)
+	}
+	if _, err := cli.ListSCIMEmbedUsers(ctx, 4, 2, `userName co "jamie"`); err != nil {
+		t.Fatalf("ListSCIMEmbedUsers: %v", err)
+	}
+	if _, err := cli.GetSCIMEmbedUser(ctx, id); err != nil {
+		t.Fatalf("GetSCIMEmbedUser: %v", err)
+	}
+	if _, err := cli.DeleteSCIMEmbedUser(ctx, id); err != nil {
+		t.Fatalf("DeleteSCIMEmbedUser: %v", err)
+	}
+
+	for _, key := range []string{
+		"users-create", "users-get", "users-update", "users-replace", "users-delete",
+		"groups-create", "groups-get", "groups-update", "groups-replace", "groups-delete",
+		"embed-users-list", "embed-users-get", "embed-users-delete",
+	} {
+		if !saw[key] {
+			t.Fatalf("expected scim wrapper %q to be exercised", key)
+		}
+	}
+}
+
+func TestConnectionWrappers(t *testing.T) {
+	const (
+		connectionID  = "550e8400-e29b-41d4-a716-446655440000"
+		scheduleID    = "11111111-1111-1111-1111-111111111111"
+		environmentID = "22222222-2222-2222-2222-222222222222"
+	)
+
+	connUUID := uuid.MustParse(connectionID)
+	scheduleUUID := uuid.MustParse(scheduleID)
+	environmentUUID := uuid.MustParse(environmentID)
+	saw := map[string]bool{}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Header.Get("Authorization") != "Bearer token-123" {
+			t.Fatalf("missing auth header: %q", r.Header.Get("Authorization"))
+		}
+
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/connections":
+			saw["list"] = true
+			assertQueryValue(t, r.URL, "name", "Coverage Warehouse")
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/connections":
+			saw["create"] = true
+			if body := mustReadBody(t, r); !strings.Contains(body, `"Coverage Warehouse"`) {
+				t.Fatalf("unexpected connection create body %q", body)
+			}
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodPatch && r.URL.Path == "/api/v1/connections/"+connectionID:
+			saw["update"] = true
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/connections/"+connectionID+"/dbt":
+			saw["dbt-get"] = true
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodPut && r.URL.Path == "/api/v1/connections/"+connectionID+"/dbt":
+			saw["dbt-update"] = true
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodDelete && r.URL.Path == "/api/v1/connections/"+connectionID+"/dbt":
+			saw["dbt-delete"] = true
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/connections/"+connectionID+"/schedules":
+			saw["schedules-list"] = true
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/connections/"+connectionID+"/schedules":
+			saw["schedules-create"] = true
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/connections/"+connectionID+"/schedules/"+scheduleID:
+			saw["schedules-get"] = true
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodPut && r.URL.Path == "/api/v1/connections/"+connectionID+"/schedules/"+scheduleID:
+			saw["schedules-update"] = true
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodDelete && r.URL.Path == "/api/v1/connections/"+connectionID+"/schedules/"+scheduleID:
+			saw["schedules-delete"] = true
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/connection-environments":
+			saw["environments-list"] = true
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/connection-environments":
+			saw["environments-create"] = true
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodPut && r.URL.Path == "/api/v1/connection-environments/"+environmentID:
+			saw["environments-update"] = true
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodDelete && r.URL.Path == "/api/v1/connection-environments/"+environmentID:
+			saw["environments-delete"] = true
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			t.Fatalf("unexpected %s %s", r.Method, r.URL.String())
+		}
+	}))
+	defer server.Close()
+
+	cli := mustNewClient(t, server.URL)
+	ctx := context.Background()
+
+	if _, err := cli.ListConnections(ctx, "Coverage Warehouse"); err != nil {
+		t.Fatalf("ListConnections: %v", err)
+	}
+	if _, err := cli.CreateConnection(ctx, []byte(`{"name":"Coverage Warehouse"}`)); err != nil {
+		t.Fatalf("CreateConnection: %v", err)
+	}
+	if _, err := cli.UpdateConnection(ctx, connUUID, []byte(`{"name":"Coverage Warehouse Updated"}`)); err != nil {
+		t.Fatalf("UpdateConnection: %v", err)
+	}
+	if _, err := cli.GetConnectionDBT(ctx, connUUID); err != nil {
+		t.Fatalf("GetConnectionDBT: %v", err)
+	}
+	if _, err := cli.UpdateConnectionDBT(ctx, connUUID, []byte(`{"projectPath":"/tmp/dbt"}`)); err != nil {
+		t.Fatalf("UpdateConnectionDBT: %v", err)
+	}
+	if _, err := cli.DeleteConnectionDBT(ctx, connUUID); err != nil {
+		t.Fatalf("DeleteConnectionDBT: %v", err)
+	}
+	if _, err := cli.ListConnectionSchedules(ctx, connUUID); err != nil {
+		t.Fatalf("ListConnectionSchedules: %v", err)
+	}
+	if _, err := cli.CreateConnectionSchedule(ctx, connUUID, []byte(`{"name":"Nightly Refresh"}`)); err != nil {
+		t.Fatalf("CreateConnectionSchedule: %v", err)
+	}
+	if _, err := cli.GetConnectionSchedule(ctx, connUUID, scheduleUUID); err != nil {
+		t.Fatalf("GetConnectionSchedule: %v", err)
+	}
+	if _, err := cli.UpdateConnectionSchedule(ctx, connUUID, scheduleUUID, []byte(`{"name":"Nightly Refresh Updated"}`)); err != nil {
+		t.Fatalf("UpdateConnectionSchedule: %v", err)
+	}
+	if _, err := cli.DeleteConnectionSchedule(ctx, connUUID, scheduleUUID); err != nil {
+		t.Fatalf("DeleteConnectionSchedule: %v", err)
+	}
+	if _, err := cli.ListConnectionEnvironments(ctx); err != nil {
+		t.Fatalf("ListConnectionEnvironments: %v", err)
+	}
+	if _, err := cli.CreateConnectionEnvironment(ctx, []byte(`{"name":"Staging"}`)); err != nil {
+		t.Fatalf("CreateConnectionEnvironment: %v", err)
+	}
+	if _, err := cli.UpdateConnectionEnvironment(ctx, environmentUUID, []byte(`{"name":"Staging Updated"}`)); err != nil {
+		t.Fatalf("UpdateConnectionEnvironment: %v", err)
+	}
+	if _, err := cli.DeleteConnectionEnvironment(ctx, environmentUUID); err != nil {
+		t.Fatalf("DeleteConnectionEnvironment: %v", err)
+	}
+
+	for _, key := range []string{
+		"list", "create", "update",
+		"dbt-get", "dbt-update", "dbt-delete",
+		"schedules-list", "schedules-create", "schedules-get", "schedules-update", "schedules-delete",
+		"environments-list", "environments-create", "environments-update", "environments-delete",
+	} {
+		if !saw[key] {
+			t.Fatalf("expected connection wrapper %q to be exercised", key)
+		}
+	}
+}
+
+func TestUserWrappers(t *testing.T) {
+	const (
+		userID       = "550e8400-e29b-41d4-a716-446655440000"
+		connectionID = "11111111-1111-1111-1111-111111111111"
+		modelID      = "22222222-2222-2222-2222-222222222222"
+		groupID      = "grp_coverage"
+	)
+
+	userUUID := uuid.MustParse(userID)
+	connectionUUID := uuid.MustParse(connectionID)
+	modelUUID := uuid.MustParse(modelID)
+	saw := map[string]bool{}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Header.Get("Authorization") != "Bearer token-123" {
+			t.Fatalf("missing auth header: %q", r.Header.Get("Authorization"))
+		}
+
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/users/email-only":
+			saw["list-email-only"] = true
+			assertQueryValue(t, r.URL, "cursor", "users-next")
+			assertQueryValue(t, r.URL, "pageSize", "7")
+			assertQueryValue(t, r.URL, "email", "jamie@example.com")
+			assertQueryValue(t, r.URL, "sortDirection", "desc")
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/users/email-only":
+			saw["create-email-only"] = true
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/users/email-only/bulk":
+			saw["create-email-only-bulk"] = true
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/users/"+userID+"/model-roles":
+			saw["roles-get"] = true
+			assertQueryValue(t, r.URL, "connectionId", connectionID)
+			assertQueryValue(t, r.URL, "modelId", modelID)
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/users/"+userID+"/model-roles":
+			saw["roles-assign"] = true
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/user-groups/"+groupID+"/model-roles":
+			saw["group-roles-get"] = true
+			assertQueryValue(t, r.URL, "connectionId", connectionID)
+			assertQueryValue(t, r.URL, "modelId", modelID)
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/user-groups/"+groupID+"/model-roles":
+			saw["group-roles-assign"] = true
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			t.Fatalf("unexpected %s %s", r.Method, r.URL.String())
+		}
+	}))
+	defer server.Close()
+
+	cli := mustNewClient(t, server.URL)
+	ctx := context.Background()
+
+	if _, err := cli.ListEmailOnlyUsers(ctx, "users-next", 7, "jamie@example.com", "desc"); err != nil {
+		t.Fatalf("ListEmailOnlyUsers: %v", err)
+	}
+	if _, err := cli.CreateEmailOnlyUser(ctx, []byte(`{"email":"jamie@example.com"}`)); err != nil {
+		t.Fatalf("CreateEmailOnlyUser: %v", err)
+	}
+	if _, err := cli.CreateEmailOnlyUsersBulk(ctx, []byte(`{"emails":["jamie@example.com"]}`)); err != nil {
+		t.Fatalf("CreateEmailOnlyUsersBulk: %v", err)
+	}
+	if _, err := cli.GetUserModelRoles(ctx, userUUID, &connectionUUID, &modelUUID); err != nil {
+		t.Fatalf("GetUserModelRoles: %v", err)
+	}
+	if _, err := cli.AssignUserModelRole(ctx, userUUID, []byte(`{"role":"MODELER"}`)); err != nil {
+		t.Fatalf("AssignUserModelRole: %v", err)
+	}
+	if _, err := cli.GetUserGroupModelRoles(ctx, groupID, &connectionUUID, &modelUUID); err != nil {
+		t.Fatalf("GetUserGroupModelRoles: %v", err)
+	}
+	if _, err := cli.AssignUserGroupModelRole(ctx, groupID, []byte(`{"role":"VIEWER"}`)); err != nil {
+		t.Fatalf("AssignUserGroupModelRole: %v", err)
+	}
+
+	for _, key := range []string{
+		"list-email-only", "create-email-only", "create-email-only-bulk",
+		"roles-get", "roles-assign", "group-roles-get", "group-roles-assign",
+	} {
+		if !saw[key] {
+			t.Fatalf("expected user wrapper %q to be exercised", key)
+		}
+	}
+}
+
 func TestScheduleAIAndDashboardWrappers(t *testing.T) {
 	const testUUID = "550e8400-e29b-41d4-a716-446655440000"
 	id := uuid.MustParse(testUUID)

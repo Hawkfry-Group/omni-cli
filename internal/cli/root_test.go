@@ -142,6 +142,8 @@ func TestExecuteUtilityCommandHelpWithoutConfig(t *testing.T) {
 		{name: "query", args: []string{"query", "--help"}, want: "omni query commands:"},
 		{name: "embed", args: []string{"embed", "--help"}, want: "omni embed commands:"},
 		{name: "exit-codes", args: []string{"exit-codes", "--help"}, want: "omni exit-codes:"},
+		{name: "schedules", args: []string{"schedules", "--help"}, want: "omni schedules commands:"},
+		{name: "setup", args: []string{"setup", "--help"}, want: "omni setup:"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			stdout, stderr, exit := captureExecute(t, tc.args)
