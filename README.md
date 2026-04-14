@@ -1,5 +1,5 @@
-# EARLY ALPHA
-This repository is public early so the CLI contract can be reviewed in the open. Expect breaking changes while the command surface, auth flows, and automation guarantees are still settling.
+# DEPRECIATED
+This repository is now replaced by https://github.com/exploreomni/cli
 
 # omni-cli
 
